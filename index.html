@@ -854,10 +854,76 @@ async function init(){
   L.control.zoom({position:'bottomright'}).addTo(map);
   markers=L.layerGroup().addTo(map);
   document.head.insertAdjacentHTML('beforeend','<style>.ptt{background:rgba(13,17,23,.97)!important;border:1px solid #1E2D4A!important;color:#E8EDF5!important;font-size:12px!important;padding:5px 9px!important;border-radius:7px!important;box-shadow:none!important}.ptt::before{display:none!important}</style>');
-  setProgress(50,'배관 데이터 로드 중...','8,431개 배관 불러오는 중');
+  setProgress(50,'배관 데이터 로드 중...','Supabase에서 배관 데이터 불러오는 중...');
 
-  // 3단계: 데이터 fetch
-  RAW=__PIPES__;
+  // 3단계: Supabase에서 데이터 fetch
+  const SUPA_URL = 'https://qqojcycddieqozcwygew.supabase.co';
+  const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFxb2pjeWNkZGllcW96Y3d5Z2V3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNzIzODAsImV4cCI6MjA5Mzc0ODM4MH0.uoMAzoDiWkEeUlFIr-F2c_NG2fdi7zxdgiYkIofQSVk';
+  const SUPA_HEADERS = {
+    'apikey': SUPA_KEY,
+    'Authorization': 'Bearer ' + SUPA_KEY,
+    'Content-Type': 'application/json'
+  };
+
+  try {
+    let allRows = [];
+    let from = 0;
+    const PAGE = 1000;
+
+    while (true) {
+      const url = SUPA_URL + '/rest/v1/pipes?select=*&order=id.asc&offset=' + from + '&limit=' + PAGE;
+      const res = await fetch(url, { headers: SUPA_HEADERS });
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error('HTTP ' + res.status + ': ' + errText);
+      }
+      const rows = await res.json();
+      if (!Array.isArray(rows)) throw new Error('응답 오류: ' + JSON.stringify(rows));
+      allRows = allRows.concat(rows);
+      setProgress(
+        50 + Math.round((allRows.length / 10000) * 25),
+        '배관 데이터 로드 중...',
+        allRows.length.toLocaleString() + '개 불러오는 중...'
+      );
+      if (rows.length < PAGE) break;
+      from += PAGE;
+    }
+
+    // Supabase row -> RAW 배열 변환
+    // F = {ID:0, NAME:1, MAT:2, YEAR:3, PRES:4, LEN:5, DONG:6, PROJ:7,
+    //       SCORE:8, GRADE:9, DE:10, TH:11, CO:12, OP:13, ST:14, COLOR:15, EXC:16, PT:17}
+    RAW = allRows.map(function(r) {
+      var pts = [];
+      try { if (r.pt) pts = JSON.parse(r.pt); } catch(e2) {}
+      return [
+        r.proj,        // 0: ID
+        r.name,        // 1: NAME
+        r.mat,         // 2: MAT
+        r.year,        // 3: YEAR
+        r.pres,        // 4: PRES
+        r.len,         // 5: LEN
+        r.area || '',  // 6: DONG
+        r.proj,        // 7: PROJ
+        r.score,       // 8: SCORE
+        r.grade,       // 9: GRADE
+        r.de,          // 10: DE
+        r.th,          // 11: TH
+        r.co,          // 12: CO
+        r.op,          // 13: OP
+        r.st,          // 14: ST
+        r.color,       // 15: COLOR
+        r.exc === '있음' || r.exc === 1 || r.exc === true, // 16: EXC
+        pts            // 17: PT
+      ];
+    });
+
+  } catch(e) {
+    console.error('Supabase fetch 실패:', e);
+    document.getElementById('ltxt').textContent = '데이터 로드 실패';
+    document.getElementById('lsub').textContent = e.message;
+    return;
+  }
+
   setProgress(80,'지도에 배관 표시 중...','잠시만 기다려주세요');
 
   // 4단계: 마커 그리기 (청크 방식)
@@ -1131,7 +1197,7 @@ function fToggle(){
   document.getElementById('flemmyChat').classList.toggle('hidden',!fOpen);
   document.getElementById('fBadge').style.display=fOpen?'none':'';
   if(fOpen&&fHist.length===0){
-    fBot('안녕하세요! 저는 도시가스 안전 전문가 플레미예요. 배관을 클릭하거나 궁금한 것을 물어보세요!');
+    fBot('안녕하세요! 저는 도시가스 안전 전문가 플레미예요. 배관을 클릭하거나 아래 질문을 눌러 대화해보세요!');
   }
 }
 function fClose(){
@@ -1173,10 +1239,13 @@ async function fSend(){
   fUser(text);fLoad();fBusy=true;
   fHist.push({role:'user',content:text});
   try{
-    var sys='당신은 도시가스 배관 안전 전문가 플레미입니다. 대성청정에너지 안전기획팀 소속. K-CityGas-SPC 평가 담당. 친근하고 전문적 말투로 200자 이내 답변.'+(window._selPipe?' '+fCtx():'');
-    var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':'','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:fHist.slice(-8)})});
+    var sysPrompt='당신은 도시가스 배관 안전 전문가 플레미입니다. 대성청정에너지 안전기획팀 소속. K-CityGas-SPC 평가 담당. 친근하고 전문적 말투로 200자 이내로 답변하세요.'+(window._selPipe?' '+fCtx():'');
+    var GEMINI_KEY='AIzaSyA2tKKU_tC8j_H428CmIDewoWQmgdMAVB4';
+    var geminiUrl='https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='+GEMINI_KEY;
+    var geminiMsgs=fHist.slice(-8).map(function(m){return{role:m.role==='assistant'?'model':'user',parts:[{text:m.content}]};});
+    var res=await fetch(geminiUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system_instruction:{parts:[{text:sysPrompt}]},contents:geminiMsgs})});
     var data=await res.json();
-    var reply=data.content&&data.content[0]?data.content[0].text:'죄송해요, 다시 시도해주세요.';
+    var reply=data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts&&data.candidates[0].content.parts[0]?data.candidates[0].content.parts[0].text:'죄송해요, 다시 시도해주세요.';
     fRm();fBot(reply);fHist.push({role:'assistant',content:reply});
   }catch(e){fRm();fBot('연결 오류가 발생했어요. 다시 시도해주세요!');}
   fBusy=false;
@@ -1187,24 +1256,36 @@ window.addEventListener('load',function(){
   var orig=showDetail;
   showDetail=function(p){
     orig(p);
-    var s=p[8],a=2025-p[3],e=p[16],pr=p[4],msg='';
-    if(s&&s<120)msg='긴급! '+p[1]+' 배관 '+s+'점 보통이하예요. 즉시 점검이 필요해요!';
-    else if(e&&p[2]==='PLP'&&a>=20)msg=p[1]+' '+a+'년된 PLP 강관에 굴착이력까지 있어요!';
-    else if(e)msg=p[1]+' 배관에 굴착이력이 있어요. 연결부 확인 필요해요!';
-    else if(p[2]==='PLP'&&a>=30)msg='무려 '+a+'년된 PLP 강관이에요! 정밀안전진단 대상이에요.';
-    else if(p[2]==='PLP'&&a>=20)msg=a+'년 경과 PLP 강관이에요. 방식전위 측정 필요해요!';
-    else if(pr==='중압')msg='중압 배관이에요! 굴착공사 시 반드시 입회해야 해요.';
-    else if(s&&s>=135)msg=p[1]+' '+s+'점 우수(A)! 현재 상태 매우 양호해요.';
-    else msg=p[1]+' 분석 완료! 궁금한 점은 플레미에게 물어보세요.';
-    if(!fOpen)fToggle();
-    fBot(msg);
-    document.getElementById('fHints').style.display='flex';
+    window._selPipe=p;
+    // 플레미 자동 팝업 없이 캐릭터 점프 + 뱃지만 표시
     var sv=document.getElementById('fChar').querySelector('svg');
-    sv.style.animation='none';sv.style.transform='scale(1.15)';
-    setTimeout(function(){sv.style.transform='';sv.style.animation='fbob 3s ease-in-out infinite';},300);
+    sv.style.animation='none';sv.style.transform='scale(1.2)';
+    setTimeout(function(){sv.style.transform='';sv.style.animation='fbob 3s ease-in-out infinite';},400);
+    // 뱃지 강조
+    var badge=document.getElementById('fBadge');
+    if(!fOpen&&badge){
+      badge.style.display='';
+      badge.style.background='#F97316';
+      badge.textContent='?';
+      setTimeout(function(){badge.style.background='#EF4444';badge.textContent='!';},2000);
+    }
+    // 채팅이 이미 열려있으면 메시지만 추가
+    if(fOpen){
+      var s=p[8],a=2025-p[3],e=p[16],pr=p[4],msg='';
+      if(s&&s<120)msg='긴급! '+p[1]+' 배관 '+s+'점 보통이하예요. 즉시 점검이 필요해요!';
+      else if(e&&p[2]==='PLP'&&a>=20)msg=p[1]+' '+a+'년된 PLP 강관에 굴착이력까지 있어요!';
+      else if(e)msg=p[1]+' 배관에 굴착이력이 있어요. 연결부 확인 필요해요!';
+      else if(p[2]==='PLP'&&a>=30)msg='무려 '+a+'년된 PLP 강관이에요! 정밀안전진단 대상이에요.';
+      else if(p[2]==='PLP'&&a>=20)msg=a+'년 경과 PLP 강관이에요. 방식전위 측정 필요해요!';
+      else if(pr==='중압')msg='중압 배관이에요! 굴착공사 시 반드시 입회해야 해요.';
+      else if(s&&s>=135)msg=p[1]+' '+s+'점 우수(A)! 현재 상태 매우 양호해요.';
+      else msg=p[1]+' 분석 완료! 궁금한 점을 물어보세요.';
+      fBot(msg);
+      document.getElementById('fHints').style.display='flex';
+    }
   };
   setTimeout(function(){
-    fBot('안녕하세요! 저는 도시가스 안전 전문가 플레미예요. 배관을 클릭하거나 궁금한 것을 물어보세요!');
+    fBot('안녕하세요! 저는 도시가스 안전 전문가 플레미예요. 배관을 클릭하거나 아래 질문을 눌러 대화해보세요!');
   },2000);
 });
 </script>
