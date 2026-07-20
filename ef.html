@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>전기융착(E/F) 정밀 판독 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Chosen Palette: Deep Slate & Indigo with Emerald (Success) and Amber (Alert/Energy) Accents -->
+    <!-- Application Structure Plan: This SPA is designed as a specialized 'Digital Twin Audit Dashboard'. It transforms a static text report into a dynamic diagnostic interface. 
+         1. 'Executive Header' provides immediate context (Project, Date, Overall Result).
+         2. 'Key Metrics Cards' highlight the most critical values (Voltages, Times) for quick scanning.
+         3. 'Interactive Flow Analysis' (Chart) translates the qualitative description of the fusion phases (Start, Melting, End) into a visual, interactive time-series representation, allowing users to select a phase and understand the underlying physics and quality implications.
+         4. 'Technical Data & Compliance' organizes raw tabular data and KGS standards into a clean, comparative grid. 
+         This structure mirrors a real-world engineering diagnostic tool, prioritizing data integrity and interactive exploration over a simple top-to-bottom reading experience. -->
+    <!-- Visualization & Content Choices: 
+         - Goal (Inform): Project context -> Layout (Header) -> Clear, bold typography -> Immediate situational awareness.
+         - Goal (Inform): Key B010 Data -> Presentation (Cards) -> Distinct visual blocks with Unicode icons (NO SVG) -> Quick extraction of critical parameters.
+         - Goal (Change/Relationships): Current Flow Analysis -> Visualization (Line Chart via Chart.js) -> Interactive buttons highlight different chart segments/data points -> Allows users to visually grasp the 'surge, stable melt, precise cutoff' concepts mentioned in the text.
+         - Goal (Organize): Compliance & Detailed Specs -> Presentation (CSS Grid Tables) -> Hover effects -> Structured, easy-to-read legal and technical alignment.
+         - Library: Chart.js used for Canvas rendering. Strict CSS constraints applied to the chart container. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body { background-color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .chart-container { 
+            position: relative; 
+            width: 100%; 
+            max-width: 800px; 
+            margin-left: auto; 
+            margin-right: auto; 
+            height: 350px; 
+            max-height: 400px; 
+        }
+        @media (min-width: 768px) { .chart-container { height: 400px; } }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        }
+        
+        .pulse-dot {
+            height: 10px; width: 10px; border-radius: 50%; display: inline-block;
+            box-shadow: 0 0 0 rgba(16, 185, 129, 0.4);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .phase-btn.active {
+            background-color: #4f46e5; color: white; border-color: #4f46e5;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto space-y-8">
+        
+        <header class="glass-panel rounded-3xl p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl -mr-20 -mt-20 z-0"></div>
+            
+            <div class="relative z-10 space-y-2">
+                <div class="inline-flex items-center gap-2 px-3 py-1 bg-indigo-100 text-indigo-800 text-[10px] font-bold uppercase tracking-widest rounded-full">
+                    <span class="pulse-dot bg-emerald-500"></span> Digital Twin Audit
+                </div>
+                <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">전기융착(E/F) 정밀 판독 대시보드</h1>
+                <p class="text-sm text-slate-500 font-medium tracking-wide">📍 경북 영주시 번영로 110번길 8-1 | 🗓️ 2026. 05. 07</p>
+            </div>
+            
+            <div class="relative z-10 bg-slate-900 text-white p-5 rounded-2xl flex flex-col items-end min-w-[200px] shadow-lg border border-slate-700">
+                <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">최종 판정</span>
+                <span class="text-3xl font-black text-emerald-400 tracking-tighter">FC_OK</span>
+                <span class="text-xs text-slate-300 mt-1">무결함 자동 검증 완료</span>
+            </div>
+        </header>
+
+        <section class="space-y-4">
+            <div class="flex items-center gap-2 px-2">
+                <span class="text-xl">⚙️</span>
+                <h2 class="text-lg font-bold text-slate-800">핵심 융착 파라미터 (대표 포인트: B010)</h2>
+            </div>
+            
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="glass-panel rounded-2xl p-6 transition-transform hover:-translate-y-1 duration-300">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">피팅 규격</div>
+                    <div class="text-2xl font-black text-slate-800">PE 63A 엘보</div>
+                    <div class="text-xs text-indigo-600 font-semibold mt-2">폴리텍 자동 융착기</div>
+                </div>
+                <div class="glass-panel rounded-2xl p-6 transition-transform hover:-translate-y-1 duration-300">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">입력 전압 (Input)</div>
+                    <div class="text-2xl font-black text-slate-800">221.4 <span class="text-lg text-slate-500">V</span></div>
+                    <div class="text-xs text-emerald-600 font-semibold mt-2">표준 (220V±10%) 충족</div>
+                </div>
+                <div class="glass-panel rounded-2xl p-6 transition-transform hover:-translate-y-1 duration-300">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">출력 전압 (Output)</div>
+                    <div class="text-2xl font-black text-slate-800">39.8 <span class="text-lg text-slate-500">V</span></div>
+                    <div class="text-xs text-blue-600 font-semibold mt-2">정밀 제어 출력 확인</div>
+                </div>
+                <div class="glass-panel rounded-2xl p-6 transition-transform hover:-translate-y-1 duration-300 border-l-4 border-l-indigo-500">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">융착 / 냉각 시간</div>
+                    <div class="text-2xl font-black text-slate-800">60s <span class="text-lg text-slate-300">/</span> 600s</div>
+                    <div class="text-xs text-indigo-600 font-semibold mt-2">법정 냉각 시간 준수</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="glass-panel rounded-3xl p-6 md:p-8 space-y-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">📊</span>
+                    <h2 class="text-lg font-bold text-slate-800">전류 흐름 및 에너지 공급 분석</h2>
+                </div>
+                <div class="flex gap-2" id="phase-buttons">
+                    <button class="phase-btn active px-4 py-2 rounded-xl text-xs font-bold border border-slate-200 text-slate-600 transition-colors" data-phase="all">전체 보기</button>
+                    <button class="phase-btn px-4 py-2 rounded-xl text-xs font-bold border border-slate-200 text-slate-600 transition-colors" data-phase="start">시작 단계</button>
+                    <button class="phase-btn px-4 py-2 rounded-xl text-xs font-bold border border-slate-200 text-slate-600 transition-colors" data-phase="melt">용융 단계</button>
+                    <button class="phase-btn px-4 py-2 rounded-xl text-xs font-bold border border-slate-200 text-slate-600 transition-colors" data-phase="end">완료 단계</button>
+                </div>
+            </div>
+
+            <div class="flex flex-col lg:flex-row gap-8 items-center">
+                <div class="w-full lg:w-2/3">
+                    <div class="chart-container">
+                        <canvas id="fusionChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="w-full lg:w-1/3 space-y-4">
+                    <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-6" id="analysis-box">
+                        <h3 class="text-sm font-black text-indigo-900 uppercase tracking-widest mb-3" id="analysis-title">전류 프로파일 무결성</h3>
+                        <p class="text-sm text-indigo-800 leading-relaxed font-medium" id="analysis-desc">
+                            전류의 급격한 변동(Spike)이나 중단 없이 매끄러운 흐름이 확인되어, 접합면 내부의 기공이나 불순물 개입이 없는 것으로 판단됩니다.
+                        </p>
+                        <div class="mt-4 inline-block px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded">
+                            판독: 적합 (Pass)
+                        </div>
+                    </div>
+                    
+                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 text-xs text-slate-600 leading-relaxed">
+                        <strong>💡 기술 노트:</strong> 전기융착 공정에서 전류의 흐름은 접합부의 품질을 결정하는 가장 중요한 지표입니다. 전압(V)이 일정하게 유지되는 동안 전류(A)의 거동을 분석하여 시공 무결성을 판단합니다.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="glass-panel rounded-3xl p-8 space-y-6">
+                <div class="flex items-center gap-2 border-b border-slate-100 pb-4">
+                    <span class="text-xl">📋</span>
+                    <h2 class="text-lg font-bold text-slate-800">융착 데이터 판독 내역</h2>
+                </div>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
+                        <span class="text-xs font-bold text-slate-500">융착 번호 (ID)</span>
+                        <span class="text-sm font-black text-indigo-700">B010</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
+                        <span class="text-xs font-bold text-slate-500">피팅 규격 (Spec)</span>
+                        <span class="text-sm font-black text-slate-800">PE 63A 엘보</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
+                        <span class="text-xs font-bold text-slate-500">기록 추적성</span>
+                        <span class="text-sm font-black text-slate-800">고유 식별 번호 확보</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-emerald-50 border border-emerald-100 rounded-xl">
+                        <span class="text-xs font-bold text-emerald-700">시스템 판정</span>
+                        <span class="text-sm font-black text-emerald-700">무결함 (FC_OK)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-3xl p-8 space-y-6">
+                <div class="flex items-center gap-2 border-b border-slate-100 pb-4">
+                    <span class="text-xl">✅</span>
+                    <h2 class="text-lg font-bold text-slate-800">KGS 기술 기준 부합성</h2>
+                </div>
+                <div class="space-y-4">
+                    <div class="border-l-4 border-indigo-500 pl-4">
+                        <h4 class="text-sm font-black text-slate-800 mb-1">KGS FU551 2.5.3.2</h4>
+                        <p class="text-xs text-slate-600 leading-relaxed font-medium">자동 기록 장치가 내장된 융착기 사용 및 데이터 보관 기준 준수 완료.</p>
+                    </div>
+                    <div class="border-l-4 border-indigo-500 pl-4">
+                        <h4 class="text-sm font-black text-slate-800 mb-1">KGS GC202</h4>
+                        <p class="text-xs text-slate-600 leading-relaxed font-medium">융착 전 스크래핑(산화층 제거) 및 알코올 청소 공정 후 시공되었음을 사진대지와 교차 확인 완료.</p>
+                    </div>
+                    
+                    <div class="mt-6 p-4 bg-slate-900 text-white rounded-2xl">
+                        <div class="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">검토 결론</div>
+                        <p class="text-sm font-medium leading-relaxed">
+                            본 현장의 융착 성적서는 데이터 조작이 없는 <strong class="text-emerald-400">정상 기록</strong>이며, 시공 품질은 최상위 수준으로 유지되고 있습니다.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('fusionChart').getContext('2d');
+            
+            const timeData = [0, 2, 5, 10, 20, 30, 40, 50, 59, 60, 61];
+            const voltageData = [0, 39.8, 39.8, 39.8, 39.8, 39.8, 39.8, 39.8, 39.8, 39.8, 0];
+            const currentData = [0, 15.2, 13.5, 11.8, 11.5, 11.5, 11.5, 11.5, 11.5, 11.5, 0];
+
+            const fusionChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: timeData,
+                    datasets: [
+                        {
+                            label: '출력 전압 (V)',
+                            data: voltageData,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            borderWidth: 2,
+                            yAxisID: 'y',
+                            tension: 0.1,
+                            pointRadius: 3
+                        },
+                        {
+                            label: '전류 (A)',
+                            data: currentData,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            borderWidth: 3,
+                            yAxisID: 'y1',
+                            tension: 0.3,
+                            pointRadius: 3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: { position: 'top', labels: { font: { family: 'Segoe UI', weight: 'bold' } } },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            titleFont: { size: 13 },
+                            bodyFont: { size: 13, weight: 'bold' },
+                            padding: 10,
+                            callbacks: {
+                                title: function(context) { return 'Time: ' + context[0].label + 's'; }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: '융착 시간 (초)', font: { weight: 'bold' } },
+                            grid: { display: false }
+                        },
+                        y: {
+                            type: 'linear', display: true, position: 'left',
+                            title: { display: true, text: '전압 (V)', font: { weight: 'bold' } },
+                            suggestedMin: 0, suggestedMax: 45
+                        },
+                        y1: {
+                            type: 'linear', display: true, position: 'right',
+                            title: { display: true, text: '전류 (A)', font: { weight: 'bold' } },
+                            grid: { drawOnChartArea: false },
+                            suggestedMin: 0, suggestedMax: 20
+                        }
+                    }
+                }
+            });
+
+            const phaseData = {
+                all: {
+                    title: "전류 프로파일 무결성",
+                    desc: "전류의 급격한 변동(Spike)이나 중단 없이 매끄러운 흐름이 확인되어, 접합면 내부의 기공이나 불순물 개입이 없는 것으로 판단됩니다.",
+                    status: "판독: 적합 (Pass)",
+                    bg: "bg-indigo-50", border: "border-indigo-100", textHead: "text-indigo-900", textBody: "text-indigo-800"
+                },
+                start: {
+                    title: "시작 단계 (0~5초)",
+                    desc: "초기 저항 돌파를 위한 안정적인 서지가 발생했습니다. 이는 피팅 내 열선의 단락이나 손상이 없음을 시사합니다.",
+                    status: "상태: 열선 단락 없음 (정상)",
+                    bg: "bg-blue-50", border: "border-blue-100", textHead: "text-blue-900", textBody: "text-blue-800"
+                },
+                melt: {
+                    title: "용융 단계 (5~59초)",
+                    desc: "수지가 녹으면서 전류가 약 11.5A 부근에서 일정한 곡선을 유지합니다. 에너지 밀도의 균일성이 확보되고 있습니다.",
+                    status: "상태: 에너지 균일 확보 (적합)",
+                    bg: "bg-amber-50", border: "border-amber-100", textHead: "text-amber-900", textBody: "text-amber-800"
+                },
+                end: {
+                    title: "완료 단계 (60초)",
+                    desc: "설정된 60초 도달 시 시스템이 정밀하게 전류를 차단했습니다. 수지의 과용융(Overheating) 및 열화 방지가 완벽히 제어되었습니다.",
+                    status: "상태: 과용융 방지 (적합)",
+                    bg: "bg-emerald-50", border: "border-emerald-100", textHead: "text-emerald-900", textBody: "text-emerald-800"
+                }
+            };
+
+            const buttons = document.querySelectorAll('.phase-btn');
+            const titleEl = document.getElementById('analysis-title');
+            const descEl = document.getElementById('analysis-desc');
+            const boxEl = document.getElementById('analysis-box');
+            const statusEl = boxEl.querySelector('div');
+
+            buttons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    buttons.forEach(b => b.classList.remove('active', 'bg-indigo-600', 'text-white', 'border-indigo-600'));
+                    
+                    e.target.classList.add('active');
+                    
+                    const phase = e.target.getAttribute('data-phase');
+                    const data = phaseData[phase];
+                    
+                    titleEl.textContent = data.title;
+                    descEl.textContent = data.desc;
+                    statusEl.textContent = data.status;
+                    
+                    boxEl.className = `${data.bg} border ${data.border} rounded-2xl p-6 transition-colors duration-300`;
+                    titleEl.className = `text-sm font-black ${data.textHead} uppercase tracking-widest mb-3`;
+                    descEl.className = `text-sm ${data.textBody} leading-relaxed font-medium`;
+                });
+            });
+        });
+    </script>
+</body>
+</html>
