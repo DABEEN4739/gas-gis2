@@ -953,18 +953,38 @@ async function drawPipesChunked(){
       const w=score<120?5:score<130?4:score<140?3:2;
       const line=L.polyline(ll,{color:color,weight:w,opacity:0.85,lineCap:'round',lineJoin:'round'});
       line._pipeColor=color;line._pipeWeight=w;
-      line.on('click',function(){
+      // 클릭 감도용 투명 히트존 레이어
+      const hit=L.polyline(ll,{color:'transparent',weight:18,opacity:0,lineCap:'round',lineJoin:'round'});
+      // 선택 강조 함수
+      function selectPipe(){
+        // 이전 선택 복원
         if(window._selLine&&window._selLine!==line){
           window._selLine.setStyle({color:window._selLine._pipeColor,weight:window._selLine._pipeWeight,opacity:0.85});
-          window._selLine.bringToBack();
+          if(window._selHalo){markers.removeLayer(window._selHalo);window._selHalo=null;}
         }
         window._selLine=line;
-        line.setStyle({color:'#FFFFFF',weight:w+3,opacity:1});
+        // 선택 배관: 원래 색 유지 + 굵기 증가
+        line.setStyle({color:color,weight:w+4,opacity:1});
         line.bringToFront();
+        // 흰색 후광 레이어 추가
+        var halo=L.polyline(ll,{color:'#FFFFFF',weight:w+10,opacity:0.5,lineCap:'round',lineJoin:'round'});
+        markers.addLayer(halo);
+        halo.bringToBack();
+        line.bringToFront();
+        if(window._selHalo)markers.removeLayer(window._selHalo);
+        window._selHalo=halo;
         showDetail(p);
-      });line.on('mouseover',function(){document.getElementById('map').style.cursor='pointer';});line.on('mouseout',function(){document.getElementById('map').style.cursor='';});
+      }
+      line.on('click',selectPipe);
+      hit.on('click',selectPipe);
+      hit.on('mouseover',function(){document.getElementById('map').style.cursor='pointer';});
+      hit.on('mouseout',function(){document.getElementById('map').style.cursor='';});
+      line.on('mouseover',function(){document.getElementById('map').style.cursor='pointer';});
+      line.on('mouseout',function(){document.getElementById('map').style.cursor='';});
       line.bindTooltip('<b>'+p[F.NAME]+'</b><br>'+score+'점 - '+p[F.GRADE],{className:'ptt',sticky:true});
+      hit.bindTooltip('<b>'+p[F.NAME]+'</b><br>'+score+'점 - '+p[F.GRADE],{className:'ptt',sticky:true});
       markers.addLayer(line);
+      markers.addLayer(hit);
       if(p[F.EXC]){
         const c=coords[Math.floor(coords.length/2)];
         const mk=L.circleMarker([c[1],c[0]],{radius:8,color:'#F97316',fillColor:'#F97316',fillOpacity:0.3,weight:2});
@@ -1130,7 +1150,7 @@ init().catch(e=>{
 
 <div class="fw" id="flemmyWrap">
   <div class="fc hidden" id="flemmyChat">
-    <div class="fch">
+    <div class="fch" id="fchHeader">
       <div class="fct"><div class="fdot"></div>가스박사 플레미</div>
       <span class="fcx" onclick="fClose()">x</span>
     </div>
@@ -1197,13 +1217,34 @@ var fOpen=false,fHist=[],fBusy=false;
     el.style.top=Math.max(0,Math.min(window.innerHeight-el.offsetHeight,oy+dy))+'px';
   }
   function up(){drag=false;}
+
+  // 헤더로 드래그
+  function attachHeader(){
+    var hdr=document.getElementById('fchHeader');
+    if(!hdr)return;
+    hdr.addEventListener('mousedown',function(e){
+      if(e.target.closest('.fcx'))return;
+      dn(e.clientX,e.clientY);e.preventDefault();
+    });
+    hdr.addEventListener('touchstart',function(e){
+      if(e.target.closest('.fcx'))return;
+      var t=e.touches[0];dn(t.clientX,t.clientY);
+    },{passive:true});
+  }
+  attachHeader();
+
+  // 채팅창 닫혔을 때 캐릭터로도 드래그
   el.addEventListener('mousedown',function(e){
-    if(e.target.closest('.fc')&&!e.target.closest('.fch'))return;
+    if(e.target.closest('.fc'))return;
     dn(e.clientX,e.clientY);e.preventDefault();
   });
+  el.addEventListener('touchstart',function(e){
+    if(e.target.closest('.fc'))return;
+    var t=e.touches[0];dn(t.clientX,t.clientY);
+  },{passive:true});
+
   window.addEventListener('mousemove',function(e){mv(e.clientX,e.clientY);});
   window.addEventListener('mouseup',up);
-  el.addEventListener('touchstart',function(e){if(e.target.closest('.fc')&&!e.target.closest('.fch'))return;var t=e.touches[0];dn(t.clientX,t.clientY);},{passive:true});
   window.addEventListener('touchmove',function(e){if(!drag)return;e.preventDefault();var t=e.touches[0];mv(t.clientX,t.clientY);},{passive:false});
   window.addEventListener('touchend',up);
 })();
