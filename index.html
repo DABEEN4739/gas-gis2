@@ -952,7 +952,17 @@ async function drawPipesChunked(){
       const ll=coords.map(c=>[c[1],c[0]]);
       const w=score<120?5:score<130?4:score<140?3:2;
       const line=L.polyline(ll,{color:color,weight:w,opacity:0.85,lineCap:'round',lineJoin:'round'});
-      line.on('click',function(){showDetail(p);});line.on('mouseover',function(){document.getElementById('map').style.cursor='pointer';});line.on('mouseout',function(){document.getElementById('map').style.cursor='';});
+      line._pipeColor=color;line._pipeWeight=w;
+      line.on('click',function(){
+        if(window._selLine&&window._selLine!==line){
+          window._selLine.setStyle({color:window._selLine._pipeColor,weight:window._selLine._pipeWeight,opacity:0.85});
+          window._selLine.bringToBack();
+        }
+        window._selLine=line;
+        line.setStyle({color:'#FFFFFF',weight:w+3,opacity:1});
+        line.bringToFront();
+        showDetail(p);
+      });line.on('mouseover',function(){document.getElementById('map').style.cursor='pointer';});line.on('mouseout',function(){document.getElementById('map').style.cursor='';});
       line.bindTooltip('<b>'+p[F.NAME]+'</b><br>'+score+'점 - '+p[F.GRADE],{className:'ptt',sticky:true});
       markers.addLayer(line);
       if(p[F.EXC]){
@@ -1188,13 +1198,12 @@ var fOpen=false,fHist=[],fBusy=false;
   }
   function up(){drag=false;}
   el.addEventListener('mousedown',function(e){
-    if(e.target.closest('.fch')){dn(e.clientX,e.clientY);e.preventDefault();return;}
-    if(e.target.closest('.fc'))return;
+    if(e.target.closest('.fc')&&!e.target.closest('.fch'))return;
     dn(e.clientX,e.clientY);e.preventDefault();
   });
   window.addEventListener('mousemove',function(e){mv(e.clientX,e.clientY);});
   window.addEventListener('mouseup',up);
-  el.addEventListener('touchstart',function(e){if(e.target.closest('.fc'))return;var t=e.touches[0];dn(t.clientX,t.clientY);},{passive:true});
+  el.addEventListener('touchstart',function(e){if(e.target.closest('.fc')&&!e.target.closest('.fch'))return;var t=e.touches[0];dn(t.clientX,t.clientY);},{passive:true});
   window.addEventListener('touchmove',function(e){if(!drag)return;e.preventDefault();var t=e.touches[0];mv(t.clientX,t.clientY);},{passive:false});
   window.addEventListener('touchend',up);
 })();
@@ -1206,11 +1215,16 @@ function fToggle(){
   if(fOpen&&fHist.length===0){
     fBot('안녕하세요! 저는 도시가스 안전 전문가 플레미예요. 배관을 클릭하거나 아래 질문을 눌러 대화해보세요!');
   }
+  if(typeof map!=='undefined'){
+    if(fOpen){map.dragging.disable();map.scrollWheelZoom.disable();map.touchZoom.disable();}
+    else{map.dragging.enable();map.scrollWheelZoom.enable();map.touchZoom.enable();}
+  }
 }
 function fClose(){
   fOpen=false;
   document.getElementById('flemmyChat').classList.add('hidden');
   document.getElementById('fBadge').style.display='';
+  if(typeof map!=='undefined'){map.dragging.enable();map.scrollWheelZoom.enable();map.touchZoom.enable();}
 }
 function fBot(text){
   var m=document.getElementById('fMsgs');
