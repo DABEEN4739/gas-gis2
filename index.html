@@ -950,37 +950,15 @@ async function drawPipesChunked(){
       const coords=p[F.PT],score=p[F.SCORE],color=p[F.COLOR];
       if(!coords||coords.length<2) return;
       const ll=coords.map(c=>[c[1],c[0]]);
-      const w=score<120?5:score<130?4:score<140?3:2;
+      const w=score<120?7:score<130?6:score<140?5:4;
       const line=L.polyline(ll,{color:color,weight:w,opacity:0.85,lineCap:'round',lineJoin:'round'});
       line._pipeColor=color;line._pipeWeight=w;
-      // 클릭 감도용 투명 히트존 레이어
-      const hit=L.polyline(ll,{color:'transparent',weight:18,opacity:0,lineCap:'round',lineJoin:'round'});
-      // 선택 강조 함수
-      function selectPipe(){
-        // 이전 선택 복원
-        if(window._selLine&&window._selLine!==line){
-          window._selLine.setStyle({color:window._selLine._pipeColor,weight:window._selLine._pipeWeight,opacity:0.85});
-          if(window._selHalo){markers.removeLayer(window._selHalo);window._selHalo=null;}
-        }
-        window._selLine=line;
-        // 선택 배관: 원래 색 유지 + 굵기 증가
-        line.setStyle({color:color,weight:w+4,opacity:1});
-        line.bringToFront();
-        // 흰색 후광 레이어 추가
-        var halo=L.polyline(ll,{color:'#FFFFFF',weight:w+10,opacity:0.5,lineCap:'round',lineJoin:'round'});
-        markers.addLayer(halo);
-        halo.bringToBack();
-        line.bringToFront();
-        if(window._selHalo)markers.removeLayer(window._selHalo);
-        window._selHalo=halo;
-        showDetail(p);
-      }
-      line.on('click',selectPipe);
-      hit.on('click',selectPipe);
+
+      // 호버 효과
       function onHover(){
         document.getElementById('map').style.cursor='pointer';
         if(window._selLine===line)return;
-        line.setStyle({color:'#FACC15',weight:w+4,opacity:1});
+        line.setStyle({color:'#FACC15',weight:w+5,opacity:1});
         line.bringToFront();
       }
       function onOut(){
@@ -988,12 +966,29 @@ async function drawPipesChunked(){
         if(window._selLine===line)return;
         line.setStyle({color:color,weight:w,opacity:0.85});
       }
-      hit.on('mouseover',onHover);hit.on('mouseout',onOut);
-      line.on('mouseover',onHover);line.on('mouseout',onOut);
+
+      // 선택 효과
+      function selectPipe(){
+        if(window._selLine&&window._selLine!==line){
+          var prev=window._selLine;
+          prev.setStyle({color:prev._pipeColor,weight:prev._pipeWeight,opacity:0.85});
+          if(window._selHalo){markers.removeLayer(window._selHalo);window._selHalo=null;}
+        }
+        window._selLine=line;
+        if(window._selHalo)markers.removeLayer(window._selHalo);
+        var halo=L.polyline(ll,{color:'#FFFFFF',weight:w+12,opacity:0.55,lineCap:'round',lineJoin:'round',interactive:false});
+        markers.addLayer(halo);
+        window._selHalo=halo;
+        line.setStyle({color:color,weight:w+5,opacity:1});
+        line.bringToFront();
+        showDetail(p);
+      }
+
+      line.on('mouseover',onHover);
+      line.on('mouseout',onOut);
+      line.on('click',selectPipe);
       line.bindTooltip('<b>'+p[F.NAME]+'</b><br>'+score+'점 - '+p[F.GRADE],{className:'ptt',sticky:true});
-      hit.bindTooltip('<b>'+p[F.NAME]+'</b><br>'+score+'점 - '+p[F.GRADE],{className:'ptt',sticky:true});
       markers.addLayer(line);
-      markers.addLayer(hit);
       if(p[F.EXC]){
         const c=coords[Math.floor(coords.length/2)];
         const mk=L.circleMarker([c[1],c[0]],{radius:8,color:'#F97316',fillColor:'#F97316',fillOpacity:0.3,weight:2});
