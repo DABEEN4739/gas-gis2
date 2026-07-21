@@ -845,7 +845,8 @@ async function init(){
   setProgress(30,'지도 초기화 중...','');
 
   // 2단계: 지도 초기화
-  map=L.map('map',{center:[36.566,128.729],zoom:13,zoomControl:false,attributionControl:false});
+  var myRenderer=L.canvas({tolerance:6});
+  map=L.map('map',{center:[36.566,128.729],zoom:13,zoomControl:false,attributionControl:false,preferCanvas:true,renderer:myRenderer});
   L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ko',{
     maxZoom:20,
     subdomains:['0','1','2','3'],
@@ -951,7 +952,7 @@ async function drawPipesChunked(){
       if(!coords||coords.length<2) return;
       const ll=coords.map(c=>[c[1],c[0]]);
       const w=score<120?7:score<130?6:score<140?5:4;
-      const line=L.polyline(ll,{color:color,weight:w,opacity:0.85,lineCap:'round',lineJoin:'round'});
+      const line=L.polyline(ll,{color:color,weight:w,opacity:0.85,lineCap:'round',lineJoin:'round',renderer:myRenderer});
       line._pipeColor=color;line._pipeWeight=w;
 
       // 호버 효과
