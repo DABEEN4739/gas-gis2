@@ -977,10 +977,19 @@ async function drawPipesChunked(){
       }
       line.on('click',selectPipe);
       hit.on('click',selectPipe);
-      hit.on('mouseover',function(){document.getElementById('map').style.cursor='pointer';});
-      hit.on('mouseout',function(){document.getElementById('map').style.cursor='';});
-      line.on('mouseover',function(){document.getElementById('map').style.cursor='pointer';});
-      line.on('mouseout',function(){document.getElementById('map').style.cursor='';});
+      function onHover(){
+        document.getElementById('map').style.cursor='pointer';
+        if(window._selLine===line)return;
+        line.setStyle({color:'#FACC15',weight:w+4,opacity:1});
+        line.bringToFront();
+      }
+      function onOut(){
+        document.getElementById('map').style.cursor='';
+        if(window._selLine===line)return;
+        line.setStyle({color:color,weight:w,opacity:0.85});
+      }
+      hit.on('mouseover',onHover);hit.on('mouseout',onOut);
+      line.on('mouseover',onHover);line.on('mouseout',onOut);
       line.bindTooltip('<b>'+p[F.NAME]+'</b><br>'+score+'점 - '+p[F.GRADE],{className:'ptt',sticky:true});
       hit.bindTooltip('<b>'+p[F.NAME]+'</b><br>'+score+'점 - '+p[F.GRADE],{className:'ptt',sticky:true});
       markers.addLayer(line);
