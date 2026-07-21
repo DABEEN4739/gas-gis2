@@ -1157,7 +1157,7 @@ init().catch(e=>{
 
 <style>
 .fw{position:fixed;bottom:90px;right:14px;z-index:2000;display:flex;flex-direction:column;align-items:flex-end;gap:8px;user-select:none}
-.fc{background:#0D1421;border:1.5px solid #3B82F6;border-radius:16px 16px 4px 16px;width:285px;box-shadow:0 4px 24px rgba(59,130,246,.3);display:flex;flex-direction:column;max-height:420px}
+.fc{background:#0D1421;border:1.5px solid #3B82F6;border-radius:16px 16px 4px 16px;width:370px;box-shadow:0 4px 24px rgba(59,130,246,.3);display:flex;flex-direction:column;height:520px;overflow:hidden}
 .fc.hidden{display:none}
 .fch{padding:10px 12px;border-bottom:1px solid rgba(59,130,246,.2);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;cursor:move}
 .fct{font-size:12px;font-weight:700;color:#3B82F6;display:flex;align-items:center;gap:6px}
@@ -1188,25 +1188,12 @@ init().catch(e=>{
 </style>
 
 <div class="fw" id="flemmyWrap">
-  <div class="fc hidden" id="flemmyChat">
+  <div class="fc hidden" id="flemmyChat" style="padding:0;overflow:hidden">
     <div class="fch" id="fchHeader">
       <div class="fct"><div class="fdot"></div>가스박사 플레미</div>
       <span class="fcx" onclick="fClose()">x</span>
     </div>
-    <div class="fmsgs" id="fMsgs"></div>
-    <div class="fhints" id="fHints">
-      <div class="fhint" onclick="fHint(this)">사고사례 알려줘</div>
-      <div class="fhint" onclick="fHint(this)">위험도가 뭐야?</div>
-      <div class="fhint" onclick="fHint(this)">점검 방법은?</div>
-      <div class="fhint" onclick="fHint(this)">이 배관 위험해?</div>
-    </div>
-    <div class="finpw">
-      <textarea class="finp" id="fInp" placeholder="플레미에게 물어보세요..." rows="1"
-        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();fSend();}"></textarea>
-      <button class="fsend" onclick="fSend()">
-        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-      </button>
-    </div>
+    <iframe src="https://udify.app/chat/yoo6ZL7Cb1c1vOJH" style="width:100%;flex:1;border:none;display:block;min-height:320px" allow="microphone"></iframe>
   </div>
   <div class="fchar" id="fChar" onclick="fToggle()">
     <svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
