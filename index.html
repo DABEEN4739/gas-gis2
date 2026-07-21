@@ -933,6 +933,10 @@ async function init(){
   setProgress(100,'완료!','');
   await new Promise(r=>setTimeout(r,300));
   document.getElementById('loading').style.display='none';
+
+  // 지도 이동/줌 시 화면 영역 배관 다시 그리기
+  map.on('moveend',scheduleRedraw);
+  map.on('zoomend',scheduleRedraw);
 }
 
 function loadScript(src){
@@ -943,32 +947,51 @@ function loadScript(src){
   });
 }
 
+// 줌별 최대 표시 개수
+function getMaxPipes(zoom){
+  if(zoom>=16)return 99999;
+  if(zoom>=15)return 3000;
+  if(zoom>=14)return 1500;
+  if(zoom>=13)return 800;
+  return 400;
+}
+// 화면 영역 내 배관만 필터
+function getPipesInView(){
+  const bounds=map.getBounds();
+  const max=getMaxPipes(map.getZoom());
+  const visible=[];
+  for(let i=0;i<RAW.length;i++){
+    const p=RAW[i];
+    const coords=p[F.PT];
+    if(!coords||coords.length<2)continue;
+    const lat=coords[0][1],lng=coords[0][0];
+    if(bounds.contains([lat,lng]))visible.push(p);
+    if(visible.length>=max)break;
+  }
+  return visible;
+}
 async function drawPipesChunked(){
-  const CHUNK=500;
-  for(let i=0;i<RAW.length;i+=CHUNK){
-    const chunk=RAW.slice(i,i+CHUNK);
+  const CHUNK=300;
+  const pipes=getPipesInView();
+  for(let i=0;i<pipes.length;i+=CHUNK){
+    const chunk=pipes.slice(i,i+CHUNK);
     chunk.forEach(p=>{
       const coords=p[F.PT],score=p[F.SCORE],color=p[F.COLOR];
-      if(!coords||coords.length<2) return;
+      if(!coords||coords.length<2)return;
       const ll=coords.map(c=>[c[1],c[0]]);
-      const w=score<120?7:score<130?6:score<140?5:4;
+      const w=score<120?6:score<130?5:score<140?4:3;
       const line=L.polyline(ll,{color:color,weight:w,opacity:0.85,lineCap:'round',lineJoin:'round',renderer:myRenderer});
       line._pipeColor=color;line._pipeWeight=w;
-
-      // 호버 효과
       function onHover(){
         document.getElementById('map').style.cursor='pointer';
         if(window._selLine===line)return;
-        line.setStyle({color:'#FACC15',weight:w+5,opacity:1});
-        line.bringToFront();
+        line.setStyle({color:'#FACC15',weight:w+4,opacity:1});
       }
       function onOut(){
         document.getElementById('map').style.cursor='';
         if(window._selLine===line)return;
         line.setStyle({color:color,weight:w,opacity:0.85});
       }
-
-      // 선택 효과
       function selectPipe(){
         if(window._selLine&&window._selLine!==line){
           var prev=window._selLine;
@@ -977,14 +1000,12 @@ async function drawPipesChunked(){
         }
         window._selLine=line;
         if(window._selHalo)markers.removeLayer(window._selHalo);
-        var halo=L.polyline(ll,{color:'#FFFFFF',weight:w+12,opacity:0.55,lineCap:'round',lineJoin:'round',interactive:false});
+        var halo=L.polyline(ll,{color:'#FFFFFF',weight:w+10,opacity:0.5,lineCap:'round',lineJoin:'round',interactive:false,renderer:myRenderer});
         markers.addLayer(halo);
         window._selHalo=halo;
-        line.setStyle({color:color,weight:w+5,opacity:1});
-        line.bringToFront();
+        line.setStyle({color:color,weight:w+4,opacity:1});
         showDetail(p);
       }
-
       line.on('mouseover',onHover);
       line.on('mouseout',onOut);
       line.on('click',selectPipe);
@@ -992,15 +1013,28 @@ async function drawPipesChunked(){
       markers.addLayer(line);
       if(p[F.EXC]){
         const c=coords[Math.floor(coords.length/2)];
-        const mk=L.circleMarker([c[1],c[0]],{radius:8,color:'#F97316',fillColor:'#F97316',fillOpacity:0.3,weight:2});
-        mk.on('click',function(){showDetail(p);});mk.on('mouseover',function(){document.getElementById('map').style.cursor='pointer';});mk.on('mouseout',function(){document.getElementById('map').style.cursor='';});
+        const mk=L.circleMarker([c[1],c[0]],{radius:6,color:'#F97316',fillColor:'#F97316',fillOpacity:0.3,weight:2,renderer:myRenderer});
+        mk.on('click',function(){showDetail(p);});
+        mk.on('mouseover',function(){document.getElementById('map').style.cursor='pointer';});
+        mk.on('mouseout',function(){document.getElementById('map').style.cursor='';});
         markers.addLayer(mk);
       }
     });
-    const pct=50+Math.round((i/RAW.length)*30);
-    setProgress(pct,'지도에 배관 표시 중...',(Math.min(i+CHUNK,RAW.length).toLocaleString()+' / '+RAW.length.toLocaleString()+'개'));
+    const pct=50+Math.round((i/pipes.length)*30);
+    setProgress(pct,'지도에 배관 표시 중...',(Math.min(i+CHUNK,pipes.length).toLocaleString()+' / '+pipes.length.toLocaleString()+'개'));
     await new Promise(r=>setTimeout(r,0));
   }
+}
+// 지도 이동/줌 시 다시 그리기
+var _redrawTimer=null;
+function scheduleRedraw(){
+  if(_redrawTimer)clearTimeout(_redrawTimer);
+  _redrawTimer=setTimeout(function(){
+    window._selHalo&&markers.removeLayer(window._selHalo);
+    window._selLine=null;window._selHalo=null;
+    markers.clearLayers();
+    drawPipesChunked();
+  },500);
 }
 
 function updateStats(){
@@ -1306,13 +1340,13 @@ async function fSend(){
   fUser(text);fLoad();fBusy=true;
   fHist.push({role:'user',content:text});
   try{
-    var sysPrompt='당신은 도시가스 배관 안전 전문가 플레미입니다. 대성청정에너지 안전기획팀 소속. K-CityGas-SPC 평가 담당. 친근하고 전문적 말투로 200자 이내로 답변하세요.'+(window._selPipe?' '+fCtx():'');
-    var GEMINI_KEY='AIzaSyA2tKKU_tC8j_H428CmIDewoWQmgdMAVB4';
-    var geminiUrl='https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='+GEMINI_KEY;
-    var geminiMsgs=fHist.slice(-8).map(function(m){return{role:m.role==='assistant'?'model':'user',parts:[{text:m.content}]};});
-    var res=await fetch(geminiUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system_instruction:{parts:[{text:sysPrompt}]},contents:geminiMsgs})});
+    var DIFY_KEY='app-8Eeu9j6beTPGMZS0q5t8xNZd';
+    var query=text+(window._selPipe?' [선택 배관: '+fCtx()+']':'');
+    var body={inputs:{},query:query,response_mode:'blocking',conversation_id:window._difyConvId||'',user:'pipe-gis-user'};
+    var res=await fetch('https://api.dify.ai/v1/chat-messages',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+DIFY_KEY},body:JSON.stringify(body)});
     var data=await res.json();
-    var reply=data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts&&data.candidates[0].content.parts[0]?data.candidates[0].content.parts[0].text:'죄송해요, 다시 시도해주세요.';
+    if(data.conversation_id)window._difyConvId=data.conversation_id;
+    var reply=data.answer||'죄송해요, 다시 시도해주세요.';
     fRm();fBot(reply);fHist.push({role:'assistant',content:reply});
   }catch(e){fRm();fBot('연결 오류가 발생했어요. 다시 시도해주세요!');}
   fBusy=false;
