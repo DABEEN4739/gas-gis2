@@ -894,26 +894,26 @@ async function init(){
     //       SCORE:8, GRADE:9, DE:10, TH:11, CO:12, OP:13, ST:14, COLOR:15, EXC:16, PT:17}
     RAW = allRows.map(function(r) {
       var pts = [];
-      try { if (r.pt) pts = JSON.parse(r.pt); } catch(e2) {}
+      try { if (r.coordinates) pts = typeof r.coordinates === 'string' ? JSON.parse(r.coordinates) : r.coordinates; } catch(e2) {}
       return [
-        r.proj,        // 0: ID
-        r.name,        // 1: NAME
-        r.mat,         // 2: MAT
-        r.year,        // 3: YEAR
-        r.pres,        // 4: PRES
-        r.len,         // 5: LEN
-        r.area || '',  // 6: DONG
-        r.proj,        // 7: PROJ
-        r.score,       // 8: SCORE
-        r.grade,       // 9: GRADE
-        r.de,          // 10: DE
-        r.th,          // 11: TH
-        r.co,          // 12: CO
-        r.op,          // 13: OP
-        r.st,          // 14: ST
-        r.color,       // 15: COLOR
-        r.exc === '있음' || r.exc === 1 || r.exc === true, // 16: EXC
-        pts            // 17: PT
+        r.id,                    // 0: ID
+        r.name || '',            // 1: NAME
+        r.material || '',        // 2: MAT
+        r.install_year || 0,     // 3: YEAR
+        r.pressure || '',        // 4: PRES
+        r.length || 0,           // 5: LEN
+        r.dong || '',            // 6: DONG
+        r.project_no || '',      // 7: PROJ
+        r.score,                 // 8: SCORE
+        r.grade || '',           // 9: GRADE
+        r.design_env,            // 10: DE
+        r.third_party,           // 11: TH
+        r.corrosion,             // 12: CO
+        r.operation,             // 13: OP
+        r.stress,                // 14: ST
+        r.score==null?'#64748B':r.score<120?'#EF4444':r.score<130?'#F97316':r.score<140?'#EAB308':'#22C55E', // 15: COLOR
+        r.excavation === true || r.excavation === 1, // 16: EXC
+        pts                      // 17: PT
       ];
     });
 
