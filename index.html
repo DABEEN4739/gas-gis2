@@ -1294,24 +1294,7 @@ function fCtx(){
   return '현재 선택 배관: 이름='+p[1]+', 재질='+p[2]+', 설치='+p[3]+'년('+(2025-p[3])+'년경과), 압력='+p[4]+', SPC점수='+(p[8]||'미평가')+', 등급='+(p[9]||'-')+', 굴착이력='+(p[16]?'있음':'없음')+', 설계환경='+p[10]+', 제3자='+p[11]+', 부식='+p[12]+', 운전보수='+p[13]+', 응력='+p[14];
 }
 async function fSend(){
-  var inp=document.getElementById('fInp');
-  var text=inp.value.trim();if(!text||fBusy)return;
-  inp.value='';
-  document.getElementById('fHints').style.display='none';
-  if(!fOpen){fOpen=true;document.getElementById('flemmyChat').classList.remove('hidden');document.getElementById('fBadge').style.display='none';}
-  fUser(text);fLoad();fBusy=true;
-  fHist.push({role:'user',content:text});
-  try{
-    var DIFY_KEY='app-8Eeu9j6beTPGMZS0q5t8xNZd';
-    var query=text+(window._selPipe?' [선택 배관: '+fCtx()+']':'');
-    var body={inputs:{},query:query,response_mode:'blocking',conversation_id:window._difyConvId||'',user:'pipe-gis-user'};
-    var res=await fetch('https://api.dify.ai/v1/chat-messages',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+DIFY_KEY},body:JSON.stringify(body)});
-    var data=await res.json();
-    if(data.conversation_id)window._difyConvId=data.conversation_id;
-    var reply=data.answer||'죄송해요, 다시 시도해주세요.';
-    fRm();fBot(reply);fHist.push({role:'assistant',content:reply});
-  }catch(e){fRm();fBot('연결 오류가 발생했어요. 다시 시도해주세요!');}
-  fBusy=false;
+  // iframe 방식 사용 중 - API 직접 호출 비활성화
 }
 function fHint(el){document.getElementById('fInp').value=el.textContent;fSend();}
 
