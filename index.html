@@ -947,31 +947,9 @@ function loadScript(src){
 }
 
 // 줌별 최대 표시 개수
-function getMaxPipes(zoom){
-  if(zoom>=16)return 99999;
-  if(zoom>=15)return 3000;
-  if(zoom>=14)return 1500;
-  if(zoom>=13)return 800;
-  return 400;
-}
-// 화면 영역 내 배관만 필터
-function getPipesInView(){
-  const bounds=map.getBounds();
-  const max=getMaxPipes(map.getZoom());
-  const visible=[];
-  for(let i=0;i<RAW.length;i++){
-    const p=RAW[i];
-    const coords=p[F.PT];
-    if(!coords||coords.length<2)continue;
-    const lat=coords[0][1],lng=coords[0][0];
-    if(bounds.contains([lat,lng]))visible.push(p);
-    if(visible.length>=max)break;
-  }
-  return visible;
-}
 async function drawPipesChunked(){
-  const CHUNK=300;
-  const pipes=getPipesInView();
+  const CHUNK=500;
+  const pipes=RAW;
   for(let i=0;i<pipes.length;i+=CHUNK){
     const chunk=pipes.slice(i,i+CHUNK);
     chunk.forEach(p=>{
@@ -1024,17 +1002,7 @@ async function drawPipesChunked(){
     await new Promise(r=>setTimeout(r,0));
   }
 }
-// 지도 이동/줌 시 다시 그리기
-var _redrawTimer=null;
-function scheduleRedraw(){
-  if(_redrawTimer)clearTimeout(_redrawTimer);
-  _redrawTimer=setTimeout(function(){
-    window._selHalo&&markers.removeLayer(window._selHalo);
-    window._selLine=null;window._selHalo=null;
-    markers.clearLayers();
-    drawPipesChunked();
-  },500);
-}
+
 
 function updateStats(){
   function safe(id,val){var el=document.getElementById(id);if(el)el.textContent=val;}
