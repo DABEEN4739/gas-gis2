@@ -796,11 +796,11 @@ html,body{height:100%;font-family:-apple-system,sans-serif;background:var(--bg);
   <div class="li"><div class="ll" style="background:#64748B"></div>미평가</div>
 </div>
 <div class="stbar">
-  <div class="sc"><div class="sv sv-r" id="s-r">-</div><div class="sl">보통이하</div></div>
-  <div class="sc"><div class="sv sv-y" id="s-y">-</div><div class="sl">양호(B)</div></div>
-  <div class="sc"><div class="sv sv-g" id="s-g">-</div><div class="sl">우수(A)</div></div>
-  <div class="sc"><div class="sv sv-gr" id="s-m">-</div><div class="sl">미평가</div></div>
-  <div class="sc"><div class="sv sv-gr" id="s-t">-</div><div class="sl">전체</div></div>
+  <div class="sc" style="cursor:pointer" onclick="showTab('list');setTimeout(function(){filterList('red',document.querySelectorAll('.ft')[1]);},50)"><div class="sv sv-r" id="s-r">-</div><div class="sl">보통이하</div></div>
+  <div class="sc" style="cursor:pointer" onclick="showTab('list');setTimeout(function(){filterList('yellow',document.querySelectorAll('.ft')[3]);},50)"><div class="sv sv-y" id="s-y">-</div><div class="sl">양호(B)</div></div>
+  <div class="sc" style="cursor:pointer" onclick="showTab('list');setTimeout(function(){filterList('green',document.querySelectorAll('.ft')[4]);},50)"><div class="sv sv-g" id="s-g">-</div><div class="sl">우수(A)</div></div>
+  <div class="sc" style="cursor:pointer" onclick="showTab('list');setTimeout(function(){filterList('all',document.querySelectorAll('.ft')[0]);},50)"><div class="sv sv-gr" id="s-m">-</div><div class="sl">미평가</div></div>
+  <div class="sc" style="cursor:pointer" onclick="showTab('list');setTimeout(function(){filterList('all',document.querySelectorAll('.ft')[0]);},50)"><div class="sv sv-gr" id="s-t">-</div><div class="sl">전체</div></div>
 </div>
 <div class="btab">
   <div class="ti active" id="tab-list" onclick="showTab('list')"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>목록</div>
