@@ -911,7 +911,7 @@ async function init(){
         r.co,                    // 12: CO
         r.op,                    // 13: OP
         r.st,                    // 14: ST
-        r.color || (r.score==null?'#64748B':r.score<120?'#EF4444':r.score<130?'#F97316':r.score<140?'#EAB308':'#22C55E'), // 15: COLOR
+        (r.grade==null||r.grade==='')?'#64748B':r.grade.indexOf('보통이하')>-1?'#EF4444':r.grade.indexOf('양호')>-1?'#EAB308':'#22C55E', // 15: COLOR
         r.exc === 'Y' || r.exc === true || r.exc === 1, // 16: EXC
         pts                      // 17: PT
       ];
@@ -988,14 +988,7 @@ async function drawPipesChunked(){
       line.on('click',selectPipe);
       line.bindTooltip('<b>'+p[F.NAME]+'</b><br>'+score+'점 - '+p[F.GRADE],{className:'ptt',sticky:true});
       markers.addLayer(line);
-      if(p[F.EXC]){
-        const c=coords[Math.floor(coords.length/2)];
-        const mk=L.circleMarker([c[1],c[0]],{radius:6,color:'#F97316',fillColor:'#F97316',fillOpacity:0.3,weight:2});
-        mk.on('click',function(){showDetail(p);});
-        mk.on('mouseover',function(){document.getElementById('map').style.cursor='pointer';});
-        mk.on('mouseout',function(){document.getElementById('map').style.cursor='';});
-        markers.addLayer(mk);
-      }
+
     });
     const pct=50+Math.round((i/pipes.length)*30);
     setProgress(pct,'지도에 배관 표시 중...',(Math.min(i+CHUNK,pipes.length).toLocaleString()+' / '+pipes.length.toLocaleString()+'개'));
