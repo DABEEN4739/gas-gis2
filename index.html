@@ -796,11 +796,11 @@ html,body{height:100%;font-family:-apple-system,sans-serif;background:var(--bg);
   <div class="li"><div class="ll" style="background:#64748B"></div>미평가</div>
 </div>
 <div class="stbar">
-  <div class="sc"><div class="sv sv-r" id="s-r">-</div><div class="sl">보통이하</div></div>
-  <div class="sc"><div class="sv sv-y" id="s-y">-</div><div class="sl">양호(B)</div></div>
-  <div class="sc"><div class="sv sv-g" id="s-g">-</div><div class="sl">우수(A)</div></div>
-  <div class="sc"><div class="sv sv-gr" id="s-m">-</div><div class="sl">미평가</div></div>
-  <div class="sc"><div class="sv sv-gr" id="s-t">-</div><div class="sl">전체</div></div>
+  <div class="sc" style="cursor:pointer" onclick="showTab('list');setTimeout(function(){filterList('red',document.querySelectorAll('.ft')[1]);},50)"><div class="sv sv-r" id="s-r">-</div><div class="sl">보통이하</div></div>
+  <div class="sc" style="cursor:pointer" onclick="showTab('list');setTimeout(function(){filterList('yellow',document.querySelectorAll('.ft')[3]);},50)"><div class="sv sv-y" id="s-y">-</div><div class="sl">양호(B)</div></div>
+  <div class="sc" style="cursor:pointer" onclick="showTab('list');setTimeout(function(){filterList('green',document.querySelectorAll('.ft')[4]);},50)"><div class="sv sv-g" id="s-g">-</div><div class="sl">우수(A)</div></div>
+  <div class="sc" style="cursor:pointer" onclick="showTab('list');setTimeout(function(){filterList('all',document.querySelectorAll('.ft')[0]);},50)"><div class="sv sv-gr" id="s-m">-</div><div class="sl">미평가</div></div>
+  <div class="sc" style="cursor:pointer" onclick="showTab('list');setTimeout(function(){filterList('all',document.querySelectorAll('.ft')[0]);},50)"><div class="sv sv-gr" id="s-t">-</div><div class="sl">전체</div></div>
 </div>
 <div class="btab">
   <div class="ti active" id="tab-list" onclick="showTab('list')"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>목록</div>
@@ -894,26 +894,36 @@ async function init(){
     //       SCORE:8, GRADE:9, DE:10, TH:11, CO:12, OP:13, ST:14, COLOR:15, EXC:16, PT:17}
     RAW = allRows.map(function(r) {
       var pts = [];
-      try { if (r.pt) pts = JSON.parse(r.pt); } catch(e2) {}
+      try {
+        if (r.pt) {
+          if (typeof r.pt === 'string') {
+            pts = JSON.parse(r.pt);
+          } else if (Array.isArray(r.pt)) {
+            pts = r.pt;
+          }
+        }
+      } catch(e2) {
+        try { pts = JSON.parse(JSON.stringify(r.pt)); } catch(e3) {}
+      }
       return [
-        r.proj,        // 0: ID
-        r.name,        // 1: NAME
-        r.mat,         // 2: MAT
-        r.year,        // 3: YEAR
-        r.pres,        // 4: PRES
-        r.len,         // 5: LEN
-        r.area || '',  // 6: DONG
-        r.proj,        // 7: PROJ
-        r.score,       // 8: SCORE
-        r.grade,       // 9: GRADE
-        r.de,          // 10: DE
-        r.th,          // 11: TH
-        r.co,          // 12: CO
-        r.op,          // 13: OP
-        r.st,          // 14: ST
-        r.color,       // 15: COLOR
-        r.exc === '있음' || r.exc === 1 || r.exc === true, // 16: EXC
-        pts            // 17: PT
+        r.id,                    // 0: ID
+        r.name || '',            // 1: NAME
+        r.mat || '',             // 2: MAT
+        r.year || 0,             // 3: YEAR
+        r.pres || '',            // 4: PRES
+        r.len || 0,              // 5: LEN
+        r.area || '',            // 6: DONG
+        r.proj || '',            // 7: PROJ
+        r.score,                 // 8: SCORE
+        r.grade || '',           // 9: GRADE
+        r.de,                    // 10: DE
+        r.th,                    // 11: TH
+        r.co,                    // 12: CO
+        r.op,                    // 13: OP
+        r.st,                    // 14: ST
+        (r.score==null)?'#64748B':(r.score<120)?'#EF4444':(r.score<135)?'#EAB308':'#22C55E', // 15: COLOR
+        r.exc === 'Y' || r.exc === true || r.exc === 1, // 16: EXC
+        pts                      // 17: PT
       ];
     });
 
@@ -925,6 +935,8 @@ async function init(){
   }
 
   setProgress(80,'지도에 배관 표시 중...','잠시만 기다려주세요');
+  var noPt=RAW.filter(function(p){return !p[F.PT]||p[F.PT].length<2;}).length;
+  console.log('전체:'+RAW.length+', 좌표없음:'+noPt+', 표시가능:'+(RAW.length-noPt));
 
   // 4단계: 마커 그리기 (청크 방식)
   await drawPipesChunked();
@@ -947,31 +959,9 @@ function loadScript(src){
 }
 
 // 줌별 최대 표시 개수
-function getMaxPipes(zoom){
-  if(zoom>=16)return 99999;
-  if(zoom>=15)return 3000;
-  if(zoom>=14)return 1500;
-  if(zoom>=13)return 800;
-  return 400;
-}
-// 화면 영역 내 배관만 필터
-function getPipesInView(){
-  const bounds=map.getBounds();
-  const max=getMaxPipes(map.getZoom());
-  const visible=[];
-  for(let i=0;i<RAW.length;i++){
-    const p=RAW[i];
-    const coords=p[F.PT];
-    if(!coords||coords.length<2)continue;
-    const lat=coords[0][1],lng=coords[0][0];
-    if(bounds.contains([lat,lng]))visible.push(p);
-    if(visible.length>=max)break;
-  }
-  return visible;
-}
 async function drawPipesChunked(){
-  const CHUNK=300;
-  const pipes=getPipesInView();
+  const CHUNK=500;
+  const pipes=RAW;
   for(let i=0;i<pipes.length;i+=CHUNK){
     const chunk=pipes.slice(i,i+CHUNK);
     chunk.forEach(p=>{
@@ -1008,33 +998,16 @@ async function drawPipesChunked(){
       line.on('mouseover',onHover);
       line.on('mouseout',onOut);
       line.on('click',selectPipe);
-      line.bindTooltip('<b>'+p[F.NAME]+'</b><br>'+score+'점 - '+p[F.GRADE],{className:'ptt',sticky:true});
+      line.bindTooltip('<b>'+p[F.NAME]+'</b><br>'+score+'점 - '+(score==null?'미평가':score<120?'보통이하':score<135?'양호(B)':'우수(A)'),{className:'ptt',sticky:true});
       markers.addLayer(line);
-      if(p[F.EXC]){
-        const c=coords[Math.floor(coords.length/2)];
-        const mk=L.circleMarker([c[1],c[0]],{radius:6,color:'#F97316',fillColor:'#F97316',fillOpacity:0.3,weight:2});
-        mk.on('click',function(){showDetail(p);});
-        mk.on('mouseover',function(){document.getElementById('map').style.cursor='pointer';});
-        mk.on('mouseout',function(){document.getElementById('map').style.cursor='';});
-        markers.addLayer(mk);
-      }
+
     });
     const pct=50+Math.round((i/pipes.length)*30);
     setProgress(pct,'지도에 배관 표시 중...',(Math.min(i+CHUNK,pipes.length).toLocaleString()+' / '+pipes.length.toLocaleString()+'개'));
     await new Promise(r=>setTimeout(r,0));
   }
 }
-// 지도 이동/줌 시 다시 그리기
-var _redrawTimer=null;
-function scheduleRedraw(){
-  if(_redrawTimer)clearTimeout(_redrawTimer);
-  _redrawTimer=setTimeout(function(){
-    window._selHalo&&markers.removeLayer(window._selHalo);
-    window._selLine=null;window._selHalo=null;
-    markers.clearLayers();
-    drawPipesChunked();
-  },500);
-}
+
 
 function updateStats(){
   function safe(id,val){var el=document.getElementById(id);if(el)el.textContent=val;}
@@ -1067,7 +1040,7 @@ function showDetail(p){
   document.getElementById('db').innerHTML=
     '<div class="dh"><div class="dc" style="background:'+c+'1A"><div class="dn" style="color:'+c+'">'+(score||'-')+'</div><div class="dl" style="color:'+c+'">/150</div></div>'+
     '<div><div class="dname">'+p[F.NAME]+'</div><div class="did">'+(p[F.PROJ]||p[F.ID])+' - '+p[F.MAT]+' - '+p[F.PRES]+'</div></div></div>'+
-    '<div class="dtot"><div class="big" style="color:'+c+'">'+(score||'미평가')+'</div><div class="sub">K-CityGas-SPC 총점'+(score?' - '+p[F.GRADE]:'')+'</div></div>'+
+    '<div class="dtot"><div class="big" style="color:'+c+'">'+(score||'미평가')+'</div><div class="sub">K-CityGas-SPC 총점'+(score?' - '+(score<120?'보통이하':score<135?'양호(B)':'우수(A)'):'')+'</div></div>'+
     (score?'<div class="fact">'+bars+'</div>':'')+
     '<div class="ig">'+
     '<div class="ic"><div class="il">설치연도</div><div class="iv">'+p[F.YEAR]+'년 ('+(2025-p[F.YEAR])+'년)</div></div>'+
@@ -1294,6 +1267,7 @@ function fClose(){
 }
 function fBot(text){
   var m=document.getElementById('fMsgs');
+  if(!m)return;
   var row=document.createElement('div');row.className='frow';
   row.innerHTML='<div class="fav" style="background:#1D4ED8;font-size:8px">F</div><div class="fbbl b"></div>';
   m.appendChild(row);
@@ -1302,12 +1276,14 @@ function fBot(text){
 }
 function fUser(text){
   var m=document.getElementById('fMsgs');
+  if(!m)return;
   var row=document.createElement('div');row.className='frow u';
   row.innerHTML='<div class="fav">나</div><div class="fbbl u2">'+text+'</div>';
   m.appendChild(row);m.scrollTop=m.scrollHeight;
 }
 function fLoad(){
   var m=document.getElementById('fMsgs');
+  if(!m)return;
   var row=document.createElement('div');row.id='flm';row.className='frow';
   row.innerHTML='<div class="fav" style="background:#1D4ED8;font-size:8px">F</div><div class="fbbl b t">분석중...</div>';
   m.appendChild(row);m.scrollTop=m.scrollHeight;
@@ -1318,24 +1294,7 @@ function fCtx(){
   return '현재 선택 배관: 이름='+p[1]+', 재질='+p[2]+', 설치='+p[3]+'년('+(2025-p[3])+'년경과), 압력='+p[4]+', SPC점수='+(p[8]||'미평가')+', 등급='+(p[9]||'-')+', 굴착이력='+(p[16]?'있음':'없음')+', 설계환경='+p[10]+', 제3자='+p[11]+', 부식='+p[12]+', 운전보수='+p[13]+', 응력='+p[14];
 }
 async function fSend(){
-  var inp=document.getElementById('fInp');
-  var text=inp.value.trim();if(!text||fBusy)return;
-  inp.value='';
-  document.getElementById('fHints').style.display='none';
-  if(!fOpen){fOpen=true;document.getElementById('flemmyChat').classList.remove('hidden');document.getElementById('fBadge').style.display='none';}
-  fUser(text);fLoad();fBusy=true;
-  fHist.push({role:'user',content:text});
-  try{
-    var DIFY_KEY='app-8Eeu9j6beTPGMZS0q5t8xNZd';
-    var query=text+(window._selPipe?' [선택 배관: '+fCtx()+']':'');
-    var body={inputs:{},query:query,response_mode:'blocking',conversation_id:window._difyConvId||'',user:'pipe-gis-user'};
-    var res=await fetch('https://api.dify.ai/v1/chat-messages',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+DIFY_KEY},body:JSON.stringify(body)});
-    var data=await res.json();
-    if(data.conversation_id)window._difyConvId=data.conversation_id;
-    var reply=data.answer||'죄송해요, 다시 시도해주세요.';
-    fRm();fBot(reply);fHist.push({role:'assistant',content:reply});
-  }catch(e){fRm();fBot('연결 오류가 발생했어요. 다시 시도해주세요!');}
-  fBusy=false;
+  // iframe 방식 사용 중 - API 직접 호출 비활성화
 }
 function fHint(el){document.getElementById('fInp').value=el.textContent;fSend();}
 
