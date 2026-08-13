@@ -804,8 +804,9 @@ html,body{height:100%;font-family:-apple-system,sans-serif;background:var(--bg);
 </div>
 <div class="btab">
   <div class="ti active" id="tab-list" onclick="showTab('list')"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>목록</div>
-  <div class="ti" id="tab-safety" onclick="openSafety()"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4l5 2.18V11c0 3.5-2.33 6.79-5 7.93-2.67-1.14-5-4.43-5-7.93V7.18L12 5z"/></svg>안전관리 현황</div>
-  <div class="ti" id="tab-ef" onclick="openEF()"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>전기융착 판독</div>
+  <div class="ti" id="tab-stats" onclick="showStats()"><svg viewBox="0 0 24 24"><path d="M5 9.2h3V19H5V9.2zM10.6 5h2.8v14h-2.8V5zM16.2 13h2.8v6h-2.8v-6z"/></svg>통계</div>
+  <div class="ti" id="tab-safety" onclick="openSafety()"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4l5 2.18V11c0 3.5-2.33 6.79-5 7.93-2.67-1.14-5-4.43-5-7.93V7.18L12 5z"/></svg>안전관리</div>
+  <div class="ti" id="tab-ef" onclick="openEF()"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>전기융착</div>
 </div>
 <div class="panel" id="panel-list">
   <div class="ph"><h2>위험 배관 목록</h2><span class="pc" id="lc">-</span><div class="px" onclick="closePanel('list')"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></div></div>
@@ -819,6 +820,10 @@ html,body{height:100%;font-family:-apple-system,sans-serif;background:var(--bg);
     <div class="ft" onclick="filterList('plp',this)">강관(PLP)</div>
   </div>
   <div class="pb"><div class="lb" id="lb"></div></div>
+</div>
+<div class="panel" id="panel-stats">
+  <div class="ph"><h2>📊 통계 대시보드</h2><div class="px" onclick="closePanel('stats')"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></div></div>
+  <div class="pb" id="stats-body" style="padding:16px;overflow-y:auto"></div>
 </div>
 <div class="panel" id="panel-exc">
   <div class="ph"><h2>굴착공사 이력</h2><span class="pc" id="ec">-</span><div class="px" onclick="closePanel('exc')"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></div></div>
@@ -958,16 +963,29 @@ function loadScript(src){
   });
 }
 
-// 배관 구간별 그리기
+// 같은 이름의 배관을 합쳐서 그리기
 async function drawPipesChunked(){
-  const CHUNK=500;
-  const pipes=RAW;
-  for(let i=0;i<pipes.length;i+=CHUNK){
-    const chunk=pipes.slice(i,i+CHUNK);
-    chunk.forEach(p=>{
-      const coords=p[F.PT],score=p[F.SCORE],color=p[F.COLOR];
-      if(!coords||coords.length<2)return;
-      const ll=coords.map(c=>[c[1],c[0]]);
+  // 같은 NAME끼리 그룹화
+  const groups={};
+  RAW.forEach(p=>{
+    const name=p[F.NAME];
+    if(!name)return;
+    if(!groups[name])groups[name]={pipes:[],coords:[],rep:p};
+    groups[name].pipes.push(p);
+    const coords=p[F.PT];
+    if(coords&&coords.length>=2)groups[name].coords.push(...coords);
+  });
+
+  const entries=Object.values(groups);
+  const CHUNK=200;
+  for(let i=0;i<entries.length;i+=CHUNK){
+    const chunk=entries.slice(i,i+CHUNK);
+    chunk.forEach(g=>{
+      const p=g.rep;
+      const allCoords=g.coords;
+      if(!allCoords||allCoords.length<2)return;
+      const score=p[F.SCORE],color=p[F.COLOR];
+      const ll=allCoords.map(c=>[c[1],c[0]]);
       const w=score<120?6:score<130?5:score<140?4:3;
       const line=L.polyline(ll,{color:color,weight:w,opacity:0.85,lineCap:'round',lineJoin:'round'});
       line._pipeColor=color;line._pipeWeight=w;
@@ -1001,8 +1019,8 @@ async function drawPipesChunked(){
       line.bindTooltip('<b>'+p[F.NAME]+'</b><br>'+score+'점 - '+(score==null?'미평가':score<120?'보통이하':score<135?'양호(B)':'우수(A)'),{className:'ptt',sticky:true});
       markers.addLayer(line);
     });
-    const pct=50+Math.round((i/pipes.length)*30);
-    setProgress(pct,'지도에 배관 표시 중...',(Math.min(i+CHUNK,pipes.length).toLocaleString()+' / '+pipes.length.toLocaleString()+'개'));
+    const pct=50+Math.round((i/entries.length)*30);
+    setProgress(pct,'지도에 배관 표시 중...',(Math.min(i+CHUNK,entries.length).toLocaleString()+' / '+entries.length.toLocaleString()+'개'));
     await new Promise(r=>setTimeout(r,0));
   }
 }
@@ -1053,8 +1071,10 @@ function showDetail(p){
     '<div class="scn warning"><div class="st2 warning">주의사항</div><div class="stx">'+scn.warning+'</div></div>'+
     '<div class="scn safe"><div class="st2 safe">관리 권고</div><div class="stx">'+scn.safe+'</div></div>'+
     '<button class="ab '+acls+'" id="accbtn">'+atxt+'</button>'+
-    buildForecast(p)+
-    buildSchedule(p);
+    '<div style="display:flex;gap:8px;margin-top:8px">'+
+    '<button onclick="openStreetView(window._selPipe)" style="flex:1;background:#1A73E8;color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;cursor:pointer">🗺️ Street View</button>'+
+    '<button onclick="openAIReport(window._selPipe)" style="flex:1;background:#7C3AED;color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;cursor:pointer">🤖 AI 보고서</button>'+
+    '</div>';
   document.getElementById('accbtn').onclick=function(){
     var db=document.getElementById('db');
     if(!db.querySelector('.acc-added')){
@@ -1063,78 +1083,36 @@ function showDetail(p){
     }
     this.style.display='none';
   };
-  var sbtn=document.getElementById('sched-save');
-  if(sbtn)sbtn.onclick=function(){
-    var dt=document.getElementById('sched-date').value;
-    var nt=document.getElementById('sched-note').value;
-    if(!dt){alert('날짜를 선택하세요');return;}
-    var key='sched_'+p[F.ID];
-    var list=JSON.parse(localStorage.getItem(key)||'[]');
-    list.push({date:dt,note:nt,name:p[F.NAME]});
-    localStorage.setItem(key,JSON.stringify(list));
-    renderScheduleList(p);
-    document.getElementById('sched-date').value='';
-    document.getElementById('sched-note').value='';
-  };
-  renderScheduleList(p);
   window._selPipe=p;
   openPanel('detail');closePanel('list');closePanel('exc');
   const coords=p[F.PT];if(coords&&coords.length){const mid=coords[Math.floor(coords.length/2)];map.setView([mid[1],mid[0]],16,{animate:true});}
 }
 
-// 9번: 위험도 예측
-function buildForecast(p){
+// 6번: Street View
+function openStreetView(p){
+  if(!p||!p[F.PT]||!p[F.PT].length)return;
+  var mid=p[F.PT][Math.floor(p[F.PT].length/2)];
+  var url='https://www.google.com/maps/@?api=1&map_action=pano&viewpoint='+mid[1]+','+mid[0];
+  window.open(url,'_blank');
+}
+
+// 7번: AI 점검 보고서
+function openAIReport(p){
+  if(!p)return;
   var score=p[F.SCORE];
-  if(!score)return '';
   var age=2026-p[F.YEAR];
-  var decay=p[F.MAT]==='PE'||p[F.MAT]==='PEI'?0.4:0.8;
-  var s5=Math.max(score-decay*5,0);
-  var s10=Math.max(score-decay*10,0);
-  var s15=Math.max(score-decay*15,0);
-  function grade(s){return s<120?'<span style="color:#EF4444">보통이하</span>':s<135?'<span style="color:#EAB308">양호(B)</span>':'<span style="color:#22C55E">우수(A)</span>';}
-  return '<div class="scn" style="background:var(--s2);margin-top:8px">'+
-    '<div class="st2" style="color:var(--p)">📈 위험도 예측</div>'+
-    '<div style="font-size:12px;color:var(--t2);margin-bottom:6px">현재 경과: '+age+'년 · 연간 감소율: -'+decay+'점</div>'+
-    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center">'+
-    '<div style="background:var(--s);padding:8px;border-radius:8px"><div style="font-size:11px;color:var(--t2)">5년 후</div><div style="font-size:18px;font-weight:700">'+Math.round(s5)+'</div><div style="font-size:11px">'+grade(s5)+'</div></div>'+
-    '<div style="background:var(--s);padding:8px;border-radius:8px"><div style="font-size:11px;color:var(--t2)">10년 후</div><div style="font-size:18px;font-weight:700">'+Math.round(s10)+'</div><div style="font-size:11px">'+grade(s10)+'</div></div>'+
-    '<div style="background:var(--s);padding:8px;border-radius:8px"><div style="font-size:11px;color:var(--t2)">15년 후</div><div style="font-size:18px;font-weight:700">'+Math.round(s15)+'</div><div style="font-size:11px">'+grade(s15)+'</div></div>'+
-    '</div></div>';
-}
-
-// 13번: 점검 일정
-function buildSchedule(p){
-  return '<div class="scn" style="background:var(--s2);margin-top:8px">'+
-    '<div class="st2" style="color:var(--p)">📅 점검 일정 등록</div>'+
-    '<input id="sched-date" type="date" style="width:100%;box-sizing:border-box;background:var(--s);border:1px solid var(--b);border-radius:6px;padding:6px;color:var(--t);font-size:13px;margin-bottom:6px">'+
-    '<input id="sched-note" type="text" placeholder="점검 메모 (선택)" style="width:100%;box-sizing:border-box;background:var(--s);border:1px solid var(--b);border-radius:6px;padding:6px;color:var(--t);font-size:13px;margin-bottom:8px">'+
-    '<button id="sched-save" style="width:100%;background:var(--p);color:#fff;border:none;border-radius:6px;padding:8px;font-size:13px;cursor:pointer">일정 저장</button>'+
-    '<div id="sched-list" style="margin-top:8px"></div>'+
-    '</div>';
-}
-
-function renderScheduleList(p){
-  var el=document.getElementById('sched-list');
-  if(!el)return;
-  var key='sched_'+p[F.ID];
-  var list=JSON.parse(localStorage.getItem(key)||'[]');
-  if(!list.length){el.innerHTML='<div style="font-size:12px;color:var(--t2)">등록된 일정 없음</div>';return;}
-  list.sort(function(a,b){return a.date>b.date?1:-1;});
-  el.innerHTML=list.map(function(item,i){
-    var past=item.date<new Date().toISOString().slice(0,10);
-    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--b)">'+
-      '<div><div style="font-size:13px;color:'+(past?'var(--t2)':'var(--t)')+'">'+item.date+(past?' ✓':'')+'</div>'+
-      (item.note?'<div style="font-size:11px;color:var(--t2)">'+item.note+'</div>':'')+'</div>'+
-      '<button onclick="delSched(\''+key+'\','+i+',\''+p[F.ID]+'\')" style="background:none;border:none;color:#EF4444;cursor:pointer;font-size:16px">×</button>'+
-      '</div>';
-  }).join('');
-}
-
-function delSched(key,idx,pid){
-  var list=JSON.parse(localStorage.getItem(key)||'[]');
-  list.splice(idx,1);
-  localStorage.setItem(key,JSON.stringify(list));
-  if(window._selPipe&&window._selPipe[F.ID]===pid)renderScheduleList(window._selPipe);
+  var grade=!score?'미평가':score<120?'보통이하':score<135?'양호(B)':'우수(A)';
+  var msg='배관 점검 보고서를 작성해줘.\n\n'+
+    '배관명: '+p[F.NAME]+'\n'+
+    '재질: '+p[F.MAT]+'\n'+
+    '설치연도: '+p[F.YEAR]+'년 (경과 '+age+'년)\n'+
+    '압력: '+p[F.PRES]+'\n'+
+    '매설지역: '+(p[F.DONG]||'-')+'\n'+
+    '위험도 점수: '+(score||'미평가')+' ('+grade+')\n'+
+    '굴착이력: '+(p[F.EXC]?'있음':'없음')+'\n\n'+
+    '위 정보를 바탕으로 안전점검 보고서를 작성해줘.';
+  var chatUrl='https://udify.app/chat/yoo6ZL7Cb1c1vOJH?message='+encodeURIComponent(msg);
+  window.open(chatUrl,'_blank');
 }
 
 function mkItem(p){
@@ -1170,6 +1148,70 @@ function openEF(){
 function openSafety(){
   window.open('safety.html','_blank');
 }
+// 8번: 통계 대시보드
+function showStats(){
+  if(!RAW||!RAW.length){alert('데이터 로딩 중입니다');return;}
+  
+  // 등급별 집계
+  var r=RAW.filter(p=>p[F.SCORE]&&p[F.SCORE]<120).length;
+  var y=RAW.filter(p=>p[F.SCORE]&&p[F.SCORE]>=120&&p[F.SCORE]<135).length;
+  var g=RAW.filter(p=>p[F.SCORE]&&p[F.SCORE]>=135).length;
+  var m=RAW.filter(p=>!p[F.SCORE]).length;
+  var total=RAW.length;
+
+  // 재질별 집계
+  var matMap={};
+  RAW.forEach(p=>{var mat=p[F.MAT]||'기타';matMap[mat]=(matMap[mat]||0)+1;});
+  var matList=Object.entries(matMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+  // 압력별 집계
+  var presMap={};
+  RAW.forEach(p=>{var pr=p[F.PRES]||'기타';presMap[pr]=(presMap[pr]||0)+1;});
+
+  // 설치연도별 집계 (10년 단위)
+  var yearMap={'1990년대이전':0,'2000년대':0,'2010년대':0,'2020년대':0};
+  RAW.forEach(p=>{
+    var y2=p[F.YEAR];
+    if(!y2)return;
+    if(y2<2000)yearMap['1990년대이전']++;
+    else if(y2<2010)yearMap['2000년대']++;
+    else if(y2<2020)yearMap['2010년대']++;
+    else yearMap['2020년대']++;
+  });
+
+  function bar(val,max,color){
+    var pct=Math.round(val/max*100);
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'+
+      '<div style="flex:1;background:var(--b);border-radius:4px;height:8px">'+
+      '<div style="width:'+pct+'%;background:'+color+';height:8px;border-radius:4px"></div></div>'+
+      '<span style="font-size:12px;color:var(--t2);min-width:30px">'+val+'개</span></div>';
+  }
+
+  document.getElementById('stats-body').innerHTML=
+    '<div style="background:var(--s2);border-radius:12px;padding:16px;margin-bottom:12px">'+
+    '<div style="font-size:14px;font-weight:600;margin-bottom:12px">📊 등급별 현황 (총 '+total.toLocaleString()+'개)</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px">'+
+    '<div style="background:#EF444420;border-radius:8px;padding:10px;text-align:center"><div style="font-size:22px;font-weight:700;color:#EF4444">'+r.toLocaleString()+'</div><div style="font-size:12px;color:#EF4444">보통이하</div></div>'+
+    '<div style="background:#EAB30820;border-radius:8px;padding:10px;text-align:center"><div style="font-size:22px;font-weight:700;color:#EAB308">'+y.toLocaleString()+'</div><div style="font-size:12px;color:#EAB308">양호(B)</div></div>'+
+    '<div style="background:#22C55E20;border-radius:8px;padding:10px;text-align:center"><div style="font-size:22px;font-weight:700;color:#22C55E">'+g.toLocaleString()+'</div><div style="font-size:12px;color:#22C55E">우수(A)</div></div>'+
+    '<div style="background:#64748B20;border-radius:8px;padding:10px;text-align:center"><div style="font-size:22px;font-weight:700;color:#64748B">'+m.toLocaleString()+'</div><div style="font-size:12px;color:#64748B">미평가</div></div>'+
+    '</div></div>'+
+    '<div style="background:var(--s2);border-radius:12px;padding:16px;margin-bottom:12px">'+
+    '<div style="font-size:14px;font-weight:600;margin-bottom:12px">🔧 재질별 현황</div>'+
+    matList.map(([mat,cnt])=>'<div style="margin-bottom:4px"><div style="font-size:13px;margin-bottom:2px">'+mat+' ('+cnt+'개)</div>'+bar(cnt,total,'#3B82F6')+'</div>').join('')+
+    '</div>'+
+    '<div style="background:var(--s2);border-radius:12px;padding:16px;margin-bottom:12px">'+
+    '<div style="font-size:14px;font-weight:600;margin-bottom:12px">💨 압력별 현황</div>'+
+    Object.entries(presMap).map(([pr,cnt])=>'<div style="margin-bottom:4px"><div style="font-size:13px;margin-bottom:2px">'+pr+' ('+cnt+'개)</div>'+bar(cnt,total,'#8B5CF6')+'</div>').join('')+
+    '</div>'+
+    '<div style="background:var(--s2);border-radius:12px;padding:16px">'+
+    '<div style="font-size:14px;font-weight:600;margin-bottom:12px">📅 설치연도별 현황</div>'+
+    Object.entries(yearMap).map(([yr,cnt])=>'<div style="margin-bottom:4px"><div style="font-size:13px;margin-bottom:2px">'+yr+' ('+cnt+'개)</div>'+bar(cnt,total,'#F59E0B')+'</div>').join('')+
+    '</div>';
+
+  openPanel('stats');closePanel('list');closePanel('exc');closePanel('detail');
+}
+
 function showTab(t){
   document.querySelectorAll('.ti').forEach(i=>i.classList.remove('active'));
   document.getElementById('tab-'+t).classList.add('active');
