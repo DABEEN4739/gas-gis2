@@ -788,6 +788,11 @@ html,body{height:100%;font-family:-apple-system,sans-serif;background:var(--bg);
   <div class="sr" id="srd"></div>
 </div>
 <div id="map"></div>
+<div id="exc-panel" style="position:fixed;bottom:182px;right:9px;z-index:500;background:rgba(19,25,41,.94);border:1px solid var(--b);border-radius:11px;padding:8px 10px;display:flex;align-items:center;gap:6px;user-select:none">
+  <input id="exc-radius-input" type="number" min="10" max="1000" step="10" value="50" style="width:52px;background:var(--s2);border:1px solid var(--b);border-radius:6px;padding:4px 6px;color:var(--t);font-size:12px;text-align:center" oninput="updateExcRadius(this.value)">
+  <span style="font-size:11px;color:var(--t2)">m</span>
+  <div id="exc-btn" onclick="toggleExcMode()" style="background:var(--s2);border:1px solid var(--b);color:var(--t);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">🚧 굴착 반경 검색</div>
+</div>
 <div class="legend">
   <div class="ltitle">K-CityGas-SPC 등급</div>
   <div class="li"><div class="ll" style="background:#DC2626"></div>보통이하 (120점 미만)</div>
@@ -953,6 +958,7 @@ async function init(){
   // 지도 이동/줌 시 화면 영역 배관 다시 그리기
   map.on('moveend',scheduleRedraw);
   map.on('zoomend',scheduleRedraw);
+  map.on('click',onMapClickExc);
 }
 
 function loadScript(src){
@@ -1146,6 +1152,90 @@ function delSched(key,idx,pid){
   if(window._selPipe&&window._selPipe[F.ID]===pid)renderScheduleList(window._selPipe);
 }
 
+// 굴착공사 반경 알림
+var EXC_RADIUS=50; // 미터 (기본값, 입력창에서 변경 가능)
+window._excMode=false;
+window._excCircle=null;
+window._excHighlights=[];
+
+function updateExcRadius(val){
+  var n=parseInt(val,10);
+  if(!isNaN(n)&&n>0)EXC_RADIUS=n;
+}
+
+function toggleExcMode(){
+  window._excMode=!window._excMode;
+  var btn=document.getElementById('exc-btn');
+  if(window._excMode){
+    btn.style.background='var(--p)';btn.style.color='#fff';btn.style.borderColor='var(--p)';
+    btn.textContent='🚧 ON - 지도 클릭';
+    map.getContainer().style.cursor='crosshair';
+  }else{
+    btn.style.background='var(--s2)';btn.style.color='var(--t)';btn.style.borderColor='var(--b)';
+    btn.textContent='🚧 굴착 반경 검색';
+    map.getContainer().style.cursor='';
+    clearExcHighlight();
+  }
+}
+
+function clearExcHighlight(){
+  if(window._excCircle){markers.removeLayer(window._excCircle);window._excCircle=null;}
+  window._excHighlights.forEach(function(h){markers.removeLayer(h);});
+  window._excHighlights=[];
+}
+
+function findNearbyPipes(lat,lng,radiusM){
+  var latDelta=radiusM/111320;
+  var lngDelta=radiusM/(111320*Math.cos(lat*Math.PI/180));
+  var results=[];
+  for(var i=0;i<RAW.length;i++){
+    var p=RAW[i],coords=p[F.PT];
+    if(!coords||!coords.length)continue;
+    var minDist=Infinity;
+    var step=Math.max(1,Math.floor(coords.length/8));
+    for(var j=0;j<coords.length;j+=step){
+      var c=coords[j];
+      if(c[1]<lat-latDelta||c[1]>lat+latDelta||c[0]<lng-lngDelta||c[0]>lng+lngDelta)continue;
+      var d=map.distance([lat,lng],[c[1],c[0]]);
+      if(d<minDist)minDist=d;
+    }
+    if(minDist<=radiusM)results.push({idx:i,p:p,dist:Math.round(minDist)});
+  }
+  results.sort(function(a,b){return a.dist-b.dist;});
+  return results;
+}
+
+function onMapClickExc(e){
+  if(!window._excMode)return;
+  clearExcHighlight();
+  var lat=e.latlng.lat,lng=e.latlng.lng;
+  window._excCircle=L.circle([lat,lng],{radius:EXC_RADIUS,color:'#F97316',weight:2,fillColor:'#F97316',fillOpacity:.12});
+  markers.addLayer(window._excCircle);
+  var results=findNearbyPipes(lat,lng,EXC_RADIUS);
+  results.forEach(function(r){
+    var coords=r.p[F.PT];
+    if(!coords||coords.length<2)return;
+    var ll=coords.map(function(c){return [c[1],c[0]];});
+    var hl=L.polyline(ll,{color:'#F97316',weight:7,opacity:.9,lineCap:'round',lineJoin:'round'});
+    markers.addLayer(hl);
+    window._excHighlights.push(hl);
+  });
+  var body='<div style="font-size:12px;font-weight:700;margin-bottom:6px">반경 '+EXC_RADIUS+'m 내 배관 '+results.length+'건</div>';
+  if(!results.length){
+    body+='<div style="font-size:12px;color:#94A3B8">주변에 배관이 없습니다</div>';
+  }else{
+    body+=results.slice(0,10).map(function(r){
+      var score=r.p[F.SCORE];
+      var c=!score?'#64748B':score<120?'#EF4444':score<135?'#EAB308':'#22C55E';
+      return '<div style="padding:5px 0;border-bottom:1px solid rgba(255,255,255,.08);cursor:pointer" onclick="showDetail(RAW['+r.idx+'])">'+
+        '<span style="color:'+c+';font-weight:700">●</span> '+r.p[F.NAME]+
+        ' <span style="color:#94A3B8;font-size:11px">('+r.dist+'m)</span></div>';
+    }).join('');
+    if(results.length>10)body+='<div style="font-size:11px;color:#94A3B8;margin-top:4px">외 '+(results.length-10)+'건 더 있음</div>';
+  }
+  L.popup({maxWidth:260}).setLatLng([lat,lng]).setContent(body).openOn(map);
+}
+
 // 6번: 로드뷰 (한국은 카카오 로드뷰가 실제 촬영 커버리지가 훨씬 넓음)
 function openStreetView(p){
   if(!p||!p[F.PT]||!p[F.PT].length)return;
@@ -1249,6 +1339,9 @@ function showStats(){
     else yearMap['2020년대']++;
   });
 
+  // 위험배관 Top 10 (점수 낮은 순, 미평가 제외)
+  var top10=RAW.map((p,i)=>({p:p,idx:i})).filter(o=>o.p[F.SCORE]).sort((a,b)=>a.p[F.SCORE]-b.p[F.SCORE]).slice(0,10);
+
   function bar(val,max,color){
     var pct=Math.round(val/max*100);
     return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'+
@@ -1258,6 +1351,19 @@ function showStats(){
   }
 
   document.getElementById('stats-body').innerHTML=
+    '<div style="background:var(--s2);border-radius:12px;padding:16px;margin-bottom:12px">'+
+    '<div style="font-size:14px;font-weight:600;margin-bottom:12px">⚠️ 위험배관 Top 10</div>'+
+    top10.map((o,rank)=>{
+      var p=o.p,score=p[F.SCORE];
+      var c=score<120?'#EF4444':score<135?'#EAB308':'#22C55E';
+      return '<div onclick="showDetail(RAW['+o.idx+'])" style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--b);cursor:pointer">'+
+        '<div style="width:20px;font-size:12px;font-weight:800;color:var(--t2)">'+(rank+1)+'</div>'+
+        '<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+p[F.NAME]+'</div>'+
+        '<div style="font-size:10px;color:var(--t2)">'+p[F.MAT]+' · '+(2026-p[F.YEAR])+'년 경과</div></div>'+
+        '<div style="font-size:15px;font-weight:800;color:'+c+'">'+score+'</div>'+
+        '</div>';
+    }).join('')+
+    '</div>'+
     '<div style="background:var(--s2);border-radius:12px;padding:16px;margin-bottom:12px">'+
     '<div style="font-size:14px;font-weight:600;margin-bottom:12px">📊 등급별 현황 (총 '+total.toLocaleString()+'개)</div>'+
     '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px">'+
