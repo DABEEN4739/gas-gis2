@@ -958,16 +958,29 @@ function loadScript(src){
   });
 }
 
-// 줌별 최대 표시 개수
+// 같은 이름의 배관을 합쳐서 그리기
 async function drawPipesChunked(){
-  const CHUNK=500;
-  const pipes=RAW;
-  for(let i=0;i<pipes.length;i+=CHUNK){
-    const chunk=pipes.slice(i,i+CHUNK);
-    chunk.forEach(p=>{
-      const coords=p[F.PT],score=p[F.SCORE],color=p[F.COLOR];
-      if(!coords||coords.length<2)return;
-      const ll=coords.map(c=>[c[1],c[0]]);
+  // 같은 NAME끼리 그룹화
+  const groups={};
+  RAW.forEach(p=>{
+    const name=p[F.NAME];
+    if(!name)return;
+    if(!groups[name])groups[name]={pipes:[],coords:[],rep:p};
+    groups[name].pipes.push(p);
+    const coords=p[F.PT];
+    if(coords&&coords.length>=2)groups[name].coords.push(...coords);
+  });
+
+  const entries=Object.values(groups);
+  const CHUNK=200;
+  for(let i=0;i<entries.length;i+=CHUNK){
+    const chunk=entries.slice(i,i+CHUNK);
+    chunk.forEach(g=>{
+      const p=g.rep;
+      const allCoords=g.coords;
+      if(!allCoords||allCoords.length<2)return;
+      const score=p[F.SCORE],color=p[F.COLOR];
+      const ll=allCoords.map(c=>[c[1],c[0]]);
       const w=score<120?6:score<130?5:score<140?4:3;
       const line=L.polyline(ll,{color:color,weight:w,opacity:0.85,lineCap:'round',lineJoin:'round'});
       line._pipeColor=color;line._pipeWeight=w;
@@ -1000,10 +1013,9 @@ async function drawPipesChunked(){
       line.on('click',selectPipe);
       line.bindTooltip('<b>'+p[F.NAME]+'</b><br>'+score+'점 - '+(score==null?'미평가':score<120?'보통이하':score<135?'양호(B)':'우수(A)'),{className:'ptt',sticky:true});
       markers.addLayer(line);
-
     });
-    const pct=50+Math.round((i/pipes.length)*30);
-    setProgress(pct,'지도에 배관 표시 중...',(Math.min(i+CHUNK,pipes.length).toLocaleString()+' / '+pipes.length.toLocaleString()+'개'));
+    const pct=50+Math.round((i/entries.length)*30);
+    setProgress(pct,'지도에 배관 표시 중...',(Math.min(i+CHUNK,entries.length).toLocaleString()+' / '+entries.length.toLocaleString()+'개'));
     await new Promise(r=>setTimeout(r,0));
   }
 }
@@ -1019,7 +1031,7 @@ function updateStats(){
 }
 
 function buildAcc(p){
-  var s=p[F.SCORE],a=2025-p[F.YEAR],e=p[F.EXC],pr=p[F.PRES],bl=[];
+  var s=p[F.SCORE],a=2026-p[F.YEAR],e=p[F.EXC],pr=p[F.PRES],bl=[];
   if(e){bl.push({t:'굴착이력 배관 - 외부충격 손상 위험',r:'굴착 진동/충격으로 배관 연결부 이완, 피복 손상, 미세 균열이 잠재합니다. 지반 침하 후 배관 처짐 발생 시 누출로 이어집니다.',cs:[{y:'2025.06',l:'서울 서초구 교대역',d:'굴착기가 중압배관 직접 타격, 가스 누출로 지하철 2,3호선 무정차 통과, 서초대로 전면 통제'},{y:'2024 5건',l:'전국',d:'굴착센터 무신고 공사 중 배관 파손 5건 연속. 위반시 2년이하 징역 또는 2천만원 벌금'}]});}
   if(p[F.MAT]==='PLP'&&a>=15){bl.push({t:'PLP 강관 '+a+'년 경과 - 부식/균열 위험',r:'피복 노화 시 수분 침투로 강관 외면 부식이 진행됩니다. 20년 이상은 핀홀 누출, 30년 이상은 자연균열 가능성이 높습니다.',cs:[{y:'2025',l:'전국',d:'PLP관 31년 이상 배관 3,321km(13.8%). 장기사용 시 자연균열 발생 우려 - 에너지신문'},{y:'2020~2024',l:'전국',d:'5년간 도시가스 시설미비 사고 연평균 15건. 노후 배관 피복 손상이 주요 원인'}]});}
   if(pr==='중압'){bl.push({t:'중압 배관 - 파열 시 광역 피해',r:'중압 배관 파열 시 저압 대비 가스 분출이 수십배에 달합니다. 인근 반경 수백미터 내 2차 화재 및 건물 붕괴로 이어질 수 있습니다.',cs:[{y:'1995.04.28',l:'대구 달서구 상인동',d:'무단 천공으로 중압관 파손. 사망 101명, 부상 202명, 피해액 540억원. 국내 최대 도시가스 사고'},{y:'2024',l:'전국',d:'타공사 사고 6건 중 중압 이상 배관 피해 포함. 굴착 시 가스안전공사 의무 입회 시행'}]});}
@@ -1043,11 +1055,11 @@ function showDetail(p){
     '<div class="dtot"><div class="big" style="color:'+c+'">'+(score||'미평가')+'</div><div class="sub">K-CityGas-SPC 총점'+(score?' - '+(score<120?'보통이하':score<135?'양호(B)':'우수(A)'):'')+'</div></div>'+
     (score?'<div class="fact">'+bars+'</div>':'')+
     '<div class="ig">'+
-    '<div class="ic"><div class="il">설치연도</div><div class="iv">'+p[F.YEAR]+'년 ('+(2025-p[F.YEAR])+'년)</div></div>'+
+    '<div class="ic"><div class="il">설치연도</div><div class="iv">'+p[F.YEAR]+'년 ('+(2026-p[F.YEAR])+'년)</div></div>'+
     '<div class="ic"><div class="il">재질</div><div class="iv">'+p[F.MAT]+'</div></div>'+
     '<div class="ic"><div class="il">압력</div><div class="iv">'+p[F.PRES]+'</div></div>'+
     '<div class="ic"><div class="il">길이</div><div class="iv">'+p[F.LEN]+'m</div></div>'+
-    '<div class="ic"><div class="il">행정동</div><div class="iv">'+(p[F.DONG]||'-')+'</div></div>'+
+    '<div class="ic"><div class="il">매설지역</div><div class="iv">'+(p[F.DONG]||'-')+'</div></div>'+
     '<div class="ic"><div class="il">굴착공사</div><div class="iv" style="color:'+(p[F.EXC]?'#F97316':'#22C55E')+'">'+(p[F.EXC]?'이력 있음':'없음')+'</div></div>'+
     '</div>'+
     '<div class="scn danger"><div class="st2 danger">위험 시나리오</div><div class="stx">'+scn.danger+'</div></div>'+
@@ -1291,7 +1303,7 @@ function fLoad(){
 function fRm(){var e=document.getElementById('flm');if(e)e.remove();}
 function fCtx(){
   var p=window._selPipe;if(!p)return '';
-  return '현재 선택 배관: 이름='+p[1]+', 재질='+p[2]+', 설치='+p[3]+'년('+(2025-p[3])+'년경과), 압력='+p[4]+', SPC점수='+(p[8]||'미평가')+', 등급='+(p[9]||'-')+', 굴착이력='+(p[16]?'있음':'없음')+', 설계환경='+p[10]+', 제3자='+p[11]+', 부식='+p[12]+', 운전보수='+p[13]+', 응력='+p[14];
+  return '현재 선택 배관: 이름='+p[1]+', 재질='+p[2]+', 설치='+p[3]+'년('+(2026-p[3])+'년경과), 압력='+p[4]+', SPC점수='+(p[8]||'미평가')+', 등급='+(p[9]||'-')+', 굴착이력='+(p[16]?'있음':'없음')+', 설계환경='+p[10]+', 제3자='+p[11]+', 부식='+p[12]+', 운전보수='+p[13]+', 응력='+p[14];
 }
 async function fSend(){
   // iframe 방식 사용 중 - API 직접 호출 비활성화
@@ -1317,7 +1329,7 @@ window.addEventListener('load',function(){
     }
     // 채팅이 이미 열려있으면 메시지만 추가
     if(fOpen){
-      var s=p[8],a=2025-p[3],e=p[16],pr=p[4],msg='';
+      var s=p[8],a=2026-p[3],e=p[16],pr=p[4],msg='';
       if(s&&s<120)msg='긴급! '+p[1]+' 배관 '+s+'점 보통이하예요. 즉시 점검이 필요해요!';
       else if(e&&p[2]==='PLP'&&a>=20)msg=p[1]+' '+a+'년된 PLP 강관에 굴착이력까지 있어요!';
       else if(e)msg=p[1]+' 배관에 굴착이력이 있어요. 연결부 확인 필요해요!';
