@@ -1052,7 +1052,9 @@ function showDetail(p){
     '<div class="scn danger"><div class="st2 danger">위험 시나리오</div><div class="stx">'+scn.danger+'</div></div>'+
     '<div class="scn warning"><div class="st2 warning">주의사항</div><div class="stx">'+scn.warning+'</div></div>'+
     '<div class="scn safe"><div class="st2 safe">관리 권고</div><div class="stx">'+scn.safe+'</div></div>'+
-    '<button class="ab '+acls+'" id="accbtn">'+atxt+'</button>';
+    '<button class="ab '+acls+'" id="accbtn">'+atxt+'</button>'+
+    buildForecast(p)+
+    buildSchedule(p);
   document.getElementById('accbtn').onclick=function(){
     var db=document.getElementById('db');
     if(!db.querySelector('.acc-added')){
@@ -1061,9 +1063,78 @@ function showDetail(p){
     }
     this.style.display='none';
   };
+  var sbtn=document.getElementById('sched-save');
+  if(sbtn)sbtn.onclick=function(){
+    var dt=document.getElementById('sched-date').value;
+    var nt=document.getElementById('sched-note').value;
+    if(!dt){alert('날짜를 선택하세요');return;}
+    var key='sched_'+p[F.ID];
+    var list=JSON.parse(localStorage.getItem(key)||'[]');
+    list.push({date:dt,note:nt,name:p[F.NAME]});
+    localStorage.setItem(key,JSON.stringify(list));
+    renderScheduleList(p);
+    document.getElementById('sched-date').value='';
+    document.getElementById('sched-note').value='';
+  };
+  renderScheduleList(p);
   window._selPipe=p;
   openPanel('detail');closePanel('list');closePanel('exc');
   const coords=p[F.PT];if(coords&&coords.length){const mid=coords[Math.floor(coords.length/2)];map.setView([mid[1],mid[0]],16,{animate:true});}
+}
+
+// 9번: 위험도 예측
+function buildForecast(p){
+  var score=p[F.SCORE];
+  if(!score)return '';
+  var age=2026-p[F.YEAR];
+  var decay=p[F.MAT]==='PE'||p[F.MAT]==='PEI'?0.4:0.8;
+  var s5=Math.max(score-decay*5,0);
+  var s10=Math.max(score-decay*10,0);
+  var s15=Math.max(score-decay*15,0);
+  function grade(s){return s<120?'<span style="color:#EF4444">보통이하</span>':s<135?'<span style="color:#EAB308">양호(B)</span>':'<span style="color:#22C55E">우수(A)</span>';}
+  return '<div class="scn" style="background:var(--s2);margin-top:8px">'+
+    '<div class="st2" style="color:var(--p)">📈 위험도 예측</div>'+
+    '<div style="font-size:12px;color:var(--t2);margin-bottom:6px">현재 경과: '+age+'년 · 연간 감소율: -'+decay+'점</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center">'+
+    '<div style="background:var(--s);padding:8px;border-radius:8px"><div style="font-size:11px;color:var(--t2)">5년 후</div><div style="font-size:18px;font-weight:700">'+Math.round(s5)+'</div><div style="font-size:11px">'+grade(s5)+'</div></div>'+
+    '<div style="background:var(--s);padding:8px;border-radius:8px"><div style="font-size:11px;color:var(--t2)">10년 후</div><div style="font-size:18px;font-weight:700">'+Math.round(s10)+'</div><div style="font-size:11px">'+grade(s10)+'</div></div>'+
+    '<div style="background:var(--s);padding:8px;border-radius:8px"><div style="font-size:11px;color:var(--t2)">15년 후</div><div style="font-size:18px;font-weight:700">'+Math.round(s15)+'</div><div style="font-size:11px">'+grade(s15)+'</div></div>'+
+    '</div></div>';
+}
+
+// 13번: 점검 일정
+function buildSchedule(p){
+  return '<div class="scn" style="background:var(--s2);margin-top:8px">'+
+    '<div class="st2" style="color:var(--p)">📅 점검 일정 등록</div>'+
+    '<input id="sched-date" type="date" style="width:100%;box-sizing:border-box;background:var(--s);border:1px solid var(--b);border-radius:6px;padding:6px;color:var(--t);font-size:13px;margin-bottom:6px">'+
+    '<input id="sched-note" type="text" placeholder="점검 메모 (선택)" style="width:100%;box-sizing:border-box;background:var(--s);border:1px solid var(--b);border-radius:6px;padding:6px;color:var(--t);font-size:13px;margin-bottom:8px">'+
+    '<button id="sched-save" style="width:100%;background:var(--p);color:#fff;border:none;border-radius:6px;padding:8px;font-size:13px;cursor:pointer">일정 저장</button>'+
+    '<div id="sched-list" style="margin-top:8px"></div>'+
+    '</div>';
+}
+
+function renderScheduleList(p){
+  var el=document.getElementById('sched-list');
+  if(!el)return;
+  var key='sched_'+p[F.ID];
+  var list=JSON.parse(localStorage.getItem(key)||'[]');
+  if(!list.length){el.innerHTML='<div style="font-size:12px;color:var(--t2)">등록된 일정 없음</div>';return;}
+  list.sort(function(a,b){return a.date>b.date?1:-1;});
+  el.innerHTML=list.map(function(item,i){
+    var past=item.date<new Date().toISOString().slice(0,10);
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--b)">'+
+      '<div><div style="font-size:13px;color:'+(past?'var(--t2)':'var(--t)')+'">'+item.date+(past?' ✓':'')+'</div>'+
+      (item.note?'<div style="font-size:11px;color:var(--t2)">'+item.note+'</div>':'')+'</div>'+
+      '<button onclick="delSched(\''+key+'\','+i+',\''+p[F.ID]+'\')" style="background:none;border:none;color:#EF4444;cursor:pointer;font-size:16px">×</button>'+
+      '</div>';
+  }).join('');
+}
+
+function delSched(key,idx,pid){
+  var list=JSON.parse(localStorage.getItem(key)||'[]');
+  list.splice(idx,1);
+  localStorage.setItem(key,JSON.stringify(list));
+  if(window._selPipe&&window._selPipe[F.ID]===pid)renderScheduleList(window._selPipe);
 }
 
 function mkItem(p){
