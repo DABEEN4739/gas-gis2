@@ -958,29 +958,16 @@ function loadScript(src){
   });
 }
 
-// 같은 이름의 배관을 합쳐서 그리기
+// 배관 구간별 그리기
 async function drawPipesChunked(){
-  // 같은 NAME끼리 그룹화
-  const groups={};
-  RAW.forEach(p=>{
-    const name=p[F.NAME];
-    if(!name)return;
-    if(!groups[name])groups[name]={pipes:[],coords:[],rep:p};
-    groups[name].pipes.push(p);
-    const coords=p[F.PT];
-    if(coords&&coords.length>=2)groups[name].coords.push(...coords);
-  });
-
-  const entries=Object.values(groups);
-  const CHUNK=200;
-  for(let i=0;i<entries.length;i+=CHUNK){
-    const chunk=entries.slice(i,i+CHUNK);
-    chunk.forEach(g=>{
-      const p=g.rep;
-      const allCoords=g.coords;
-      if(!allCoords||allCoords.length<2)return;
-      const score=p[F.SCORE],color=p[F.COLOR];
-      const ll=allCoords.map(c=>[c[1],c[0]]);
+  const CHUNK=500;
+  const pipes=RAW;
+  for(let i=0;i<pipes.length;i+=CHUNK){
+    const chunk=pipes.slice(i,i+CHUNK);
+    chunk.forEach(p=>{
+      const coords=p[F.PT],score=p[F.SCORE],color=p[F.COLOR];
+      if(!coords||coords.length<2)return;
+      const ll=coords.map(c=>[c[1],c[0]]);
       const w=score<120?6:score<130?5:score<140?4:3;
       const line=L.polyline(ll,{color:color,weight:w,opacity:0.85,lineCap:'round',lineJoin:'round'});
       line._pipeColor=color;line._pipeWeight=w;
@@ -1014,8 +1001,8 @@ async function drawPipesChunked(){
       line.bindTooltip('<b>'+p[F.NAME]+'</b><br>'+score+'점 - '+(score==null?'미평가':score<120?'보통이하':score<135?'양호(B)':'우수(A)'),{className:'ptt',sticky:true});
       markers.addLayer(line);
     });
-    const pct=50+Math.round((i/entries.length)*30);
-    setProgress(pct,'지도에 배관 표시 중...',(Math.min(i+CHUNK,entries.length).toLocaleString()+' / '+entries.length.toLocaleString()+'개'));
+    const pct=50+Math.round((i/pipes.length)*30);
+    setProgress(pct,'지도에 배관 표시 중...',(Math.min(i+CHUNK,pipes.length).toLocaleString()+' / '+pipes.length.toLocaleString()+'개'));
     await new Promise(r=>setTimeout(r,0));
   }
 }
