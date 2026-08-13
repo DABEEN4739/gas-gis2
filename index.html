@@ -1146,15 +1146,15 @@ function delSched(key,idx,pid){
   if(window._selPipe&&window._selPipe[F.ID]===pid)renderScheduleList(window._selPipe);
 }
 
-// 6번: Street View
+// 6번: 로드뷰 (한국은 카카오 로드뷰가 실제 촬영 커버리지가 훨씬 넓음)
 function openStreetView(p){
   if(!p||!p[F.PT]||!p[F.PT].length)return;
   var mid=p[F.PT][Math.floor(p[F.PT].length/2)];
-  var url='https://www.google.com/maps/@?api=1&map_action=pano&viewpoint='+mid[1]+','+mid[0];
+  var url='https://map.kakao.com/link/roadview/'+mid[1]+','+mid[0];
   window.open(url,'_blank');
 }
 
-// 7번: AI 점검 보고서
+// 7번: AI 점검 보고서 - 문구를 클립보드에 복사 후 실제 작동하는 챗봇 창을 염 (URL 파라미터 방식은 Dify에서 차단됨)
 function openAIReport(p){
   if(!p)return;
   var score=p[F.SCORE];
@@ -1169,8 +1169,20 @@ function openAIReport(p){
     '위험도 점수: '+(score||'미평가')+' ('+grade+')\n'+
     '굴착이력: '+(p[F.EXC]?'있음':'없음')+'\n\n'+
     '위 정보를 바탕으로 안전점검 보고서를 작성해줘.';
-  var chatUrl='https://udify.app/chat/yoo6ZL7Cb1c1vOJH?message='+encodeURIComponent(msg);
-  window.open(chatUrl,'_blank');
+  function fallbackCopy(text){
+    var ta=document.createElement('textarea');
+    ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.focus();ta.select();
+    try{document.execCommand('copy');}catch(e){}
+    document.body.removeChild(ta);
+  }
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(msg).catch(function(){fallbackCopy(msg);});
+  }else{
+    fallbackCopy(msg);
+  }
+  alert('보고서 요청 문구가 복사됐어요!\n열리는 플레미 채팅창에 붙여넣기(Ctrl+V) 해주세요 🙂');
+  window.open('https://udify.app/chat/yoo6ZL7Cb1c1vOJH','_blank');
 }
 
 function mkItem(p){
