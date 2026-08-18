@@ -822,16 +822,16 @@ html,body{height:100%;font-family:-apple-system,sans-serif;background:var(--bg);
   <div class="ti active" id="tab-list" onclick="showTab('list')"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>목록</div>
   <div class="ti" id="tab-stats" onclick="showStats()"><svg viewBox="0 0 24 24"><path d="M5 9.2h3V19H5V9.2zM10.6 5h2.8v14h-2.8V5zM16.2 13h2.8v6h-2.8v-6z"/></svg>통계</div>
   <div class="ti" id="tab-safety" onclick="openSafety()"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4l5 2.18V11c0 3.5-2.33 6.79-5 7.93-2.67-1.14-5-4.43-5-7.93V7.18L12 5z"/></svg>안전관리</div>
-  <div class="ti" id="tab-ef" onclick="openEF()"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>전기융착</div>
+  <div class="ti" id="tab-ef" onclick="openEF()"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>공급전 안전점검</div>
 </div>
 <div class="panel" id="panel-list">
   <div class="ph"><h2>위험 배관 목록</h2><span class="pc" id="lc">-</span><div class="px" onclick="closePanel('list')"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></div></div>
   <div class="fsc">
     <div class="ft on" onclick="filterList('all',this)">전체</div>
-    <div class="ft" onclick="filterList('red',this)">🔴 우선관리</div>
-    <div class="ft" onclick="filterList('orange',this)">🟠 관심</div>
-    <div class="ft" onclick="filterList('yellow',this)">🟡 양호</div>
-    <div class="ft" onclick="filterList('green',this)">🟢 우수</div>
+    <div class="ft" onclick="filterList('red',this)">🔴 보통이하</div>
+    <div class="ft" onclick="filterList('yellow',this)">🟡 양호(B)</div>
+    <div class="ft" onclick="filterList('green',this)">🟢 우수(A)</div>
+    <div class="ft" onclick="filterList('gray',this)">⚪ 미평가</div>
     <div class="ft" onclick="filterList('exc',this)">⚠️ 굴착이력</div>
     <div class="ft" onclick="filterList('plp',this)">강관(PLP)</div>
   </div>
@@ -1454,25 +1454,27 @@ function makeReportPDF(){
 
 function mkItem(p){
   const idx=RAW.indexOf(p);
+  const score=p[F.SCORE];
+  const scoreLabel=(score===null||score===undefined)?'미평가':score;
   return '<div class="lit" onclick="showDetail(RAW['+idx+'])">'+
     '<div class="lit-t"><div class="lit-b" style="background:'+p[F.COLOR]+'"></div>'+
     '<div class="lit-i"><div class="lit-n">'+p[F.NAME]+'</div>'+
     '<div class="lit-s">'+(p[F.PROJ]||p[F.ID])+' - '+p[F.MAT]+' - '+p[F.DONG]+'</div></div>'+
-    '<div class="lit-sc" style="color:'+p[F.COLOR]+'">'+p[F.SCORE]+'</div></div>'+
+    '<div class="lit-sc" style="color:'+p[F.COLOR]+'">'+scoreLabel+'</div></div>'+
     '<div class="lit-m"><span class="ltg">'+p[F.YEAR]+'년</span><span class="ltg">'+p[F.PRES]+'</span>'+
     (p[F.EXC]?'<span class="ltg ltg-e">굴착이력</span>':'')+
-    (p[F.SCORE]<120?'<span class="ltg ltg-d">우선관리</span>':'')+'</div></div>';
+    (score!=null&&score<120?'<span class="ltg ltg-d">보통이하</span>':'')+'</div></div>';
 }
 
 function renderList(f){
   curFilter=f;let d=RAW;
-  if(f==='red')d=d.filter(p=>p[F.SCORE]<120);
-  else if(f==='orange')d=d.filter(p=>p[F.SCORE]>=120&&p[F.SCORE]<130);
-  else if(f==='yellow')d=d.filter(p=>p[F.SCORE]>=130&&p[F.SCORE]<140);
-  else if(f==='green')d=d.filter(p=>p[F.SCORE]>=140);
+  if(f==='red')d=d.filter(p=>p[F.SCORE]!=null&&p[F.SCORE]<120);
+  else if(f==='yellow')d=d.filter(p=>p[F.SCORE]!=null&&p[F.SCORE]>=120&&p[F.SCORE]<135);
+  else if(f==='green')d=d.filter(p=>p[F.SCORE]!=null&&p[F.SCORE]>=135);
+  else if(f==='gray')d=d.filter(p=>p[F.SCORE]==null);
   else if(f==='exc')d=d.filter(p=>p[F.EXC]);
   else if(f==='plp')d=d.filter(p=>p[F.MAT]==='PLP');
-  d=[...d].sort((a,b)=>a[F.SCORE]-b[F.SCORE]);
+  d=[...d].sort((a,b)=>(a[F.SCORE]==null?Infinity:a[F.SCORE])-(b[F.SCORE]==null?Infinity:b[F.SCORE]));
   document.getElementById('lc').textContent=d.length.toLocaleString()+'개';
   document.getElementById('lb').innerHTML=d.slice(0,200).map(mkItem).join('')||'<div style="text-align:center;color:var(--m);font-size:13px;padding:3rem">해당 배관 없음</div>';
 }
@@ -1574,15 +1576,47 @@ function showTab(t){
 }
 function openPanel(n){document.getElementById('panel-'+n).classList.add('open');}
 function closePanel(n){document.getElementById('panel-'+n).classList.remove('open');}
+let addrSearchTimer=null;
 function onSearch(val){
   const q=val.trim().toLowerCase();const res=document.getElementById('srd');
+  clearTimeout(addrSearchTimer);
   if(!q){res.style.display='none';return;}
   const found=RAW.filter(p=>String(p[F.ID]).includes(q)||p[F.NAME].toLowerCase().includes(q)||p[F.DONG].toLowerCase().includes(q)||p[F.PROJ].toLowerCase().includes(q)).slice(0,8);
-  if(!found.length){res.style.display='none';return;}
+  if(found.length){
+    res.style.display='block';
+    res.innerHTML=found.map(p=>'<div class="si" onclick="showDetail(RAW['+RAW.indexOf(p)+']);document.getElementById(\'srd\').style.display=\'none\';document.getElementById(\'sinp\').value=\'\'">'+
+      '<div class="sin"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+p[F.COLOR]+';margin-right:6px;vertical-align:middle"></span>'+p[F.NAME]+'</div>'+
+      '<div class="sim"><span>'+p[F.MAT]+'</span><span>'+p[F.YEAR]+'년</span><span>'+p[F.DONG]+'</span><span style="color:'+p[F.COLOR]+';font-weight:700">'+p[F.SCORE]+'</span></div></div>').join('');
+    return;
+  }
+  // 배관 검색 결과가 없으면 주소로 지도 이동 옵션 제공
   res.style.display='block';
-  res.innerHTML=found.map(p=>'<div class="si" onclick="showDetail(RAW['+RAW.indexOf(p)+']);document.getElementById(\'srd\').style.display=\'none\';document.getElementById(\'sinp\').value=\'\'">'+
-    '<div class="sin"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+p[F.COLOR]+';margin-right:6px;vertical-align:middle"></span>'+p[F.NAME]+'</div>'+
-    '<div class="sim"><span>'+p[F.MAT]+'</span><span>'+p[F.YEAR]+'년</span><span>'+p[F.DONG]+'</span><span style="color:'+p[F.COLOR]+';font-weight:700">'+p[F.SCORE]+'</span></div></div>').join('');
+  const rawVal=val.trim();
+  res.innerHTML='<div class="si" onclick="goToAddress('+JSON.stringify(rawVal)+')">'+
+    '<div class="sin">📍 \''+rawVal+'\' 주소로 지도 이동</div>'+
+    '<div class="sim"><span style="color:#94A3B8">일치하는 배관이 없어요 — 클릭하면 해당 주소 위치로 이동해요</span></div></div>';
+}
+
+async function goToAddress(query){
+  const res=document.getElementById('srd');
+  res.innerHTML='<div class="si"><div class="sin">🔍 \''+query+'\' 검색 중...</div></div>';
+  try{
+    const url='https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=kr&accept-language=ko&q='+encodeURIComponent(query+' 대한민국');
+    const r=await fetch(url);
+    const data=await r.json();
+    if(!data||!data.length){
+      res.innerHTML='<div class="si"><div class="sin">😥 위치를 찾지 못했어요</div><div class="sim"><span style="color:#94A3B8">더 구체적인 주소로 다시 검색해보세요</span></div></div>';
+      return;
+    }
+    const lat=parseFloat(data[0].lat),lon=parseFloat(data[0].lon);
+    map.setView([lat,lon],17,{animate:true});
+    if(window._addrMarker)markers.removeLayer(window._addrMarker);
+    window._addrMarker=L.marker([lat,lon]).addTo(markers);
+    res.style.display='none';
+    document.getElementById('sinp').value='';
+  }catch(e){
+    res.innerHTML='<div class="si"><div class="sin">⚠️ 검색 중 오류가 발생했어요</div></div>';
+  }
 }
 document.addEventListener('click',e=>{if(!e.target.closest('.sw'))document.getElementById('srd').style.display='none';});
 
