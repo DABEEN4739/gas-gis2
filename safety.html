@@ -1,526 +1,2004 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>GasSafety Pro</title>
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:#f8f7f4;color:#1a1a1a}
-::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#d0cec8;border-radius:2px}
-button{cursor:pointer;font-family:inherit;border:none;outline:none}
-input,textarea{font-family:inherit;outline:none;resize:none}
-.fade-in{animation:fadeIn .35s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-@keyframes dp{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
-.dot-pulse{display:flex;gap:4px;align-items:center}
-.dot-pulse span{width:6px;height:6px;border-radius:50%;background:#9a9690;animation:dp 1.2s infinite ease-in-out}
-.dot-pulse span:nth-child(2){animation-delay:.2s}
-.dot-pulse span:nth-child(3){animation-delay:.4s}
-#app{display:flex;height:100vh;overflow:hidden}
-#sidebar{width:230px;background:#1c1b18;display:flex;flex-direction:column;flex-shrink:0;border-right:1px solid rgba(255,255,255,.06)}
-#main{flex:1;overflow-y:auto}
-#content{max-width:860px;margin:0 auto;padding:32px 24px 60px}
-.nav-btn{display:flex;align-items:center;gap:10px;padding:11px 16px;border-radius:10px;width:100%;background:transparent;color:#8a8680;font-size:14px;font-weight:500;transition:all .15s;border:none;text-align:left}
-.nav-btn:hover{background:rgba(255,255,255,.06);color:#e8e5df}
-.nav-btn.active{background:rgba(255,255,255,.12);color:#fff}
-.panel{display:none}
-.panel.active{display:block}
-.check-btn{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all .15s;cursor:pointer}
-.check-btn:hover{transform:scale(1.1)}
-#mob-header{display:none;position:fixed;top:0;left:0;right:0;z-index:50;background:#1c1b18;padding:14px 16px;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.07)}
-#mob-sidebar{display:none;position:fixed;top:0;left:0;bottom:0;width:230px;background:#1c1b18;z-index:50;flex-direction:column}
-#mob-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:40}
-@media(max-width:768px){
-  #sidebar{display:none}
-  #mob-header{display:flex}
-  #content{padding-top:72px!important}
-  .report-grid{grid-template-columns:1fr!important}
-}
-</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAION 세이온 - 안전관리</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<style>html,body,#root{height:100%;margin:0;padding:0;}</style>
 </head>
 <body>
-<div id="app">
-  <aside id="sidebar">
-    <div style="padding:24px 20px 20px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:10px">
-      <div style="width:34px;height:34px;border-radius:9px;background:#e8562a;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      </div>
-      <span style="font-weight:700;font-size:16px;color:#f0ede8">GasSafety Pro</span>
-    </div>
-    <nav id="nav-desk" style="padding:12px 10px;flex:1"></nav>
-    <div style="padding:12px 10px 20px;border-top:1px solid rgba(255,255,255,.07)">
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,.06);border-radius:10px">
-        <div style="width:34px;height:34px;border-radius:50%;background:#e8562a22;border:1px solid #e8562a55;display:flex;align-items:center;justify-content:center;color:#e8562a;flex-shrink:0">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 18h20v2H2z"/><path d="M18 18V9l-6-6-6 6v9"/></svg>
-        </div>
-        <div>
-          <div style="font-size:13px;font-weight:600;color:#e0ddd8">안전관리자</div>
-          <div style="font-size:11px;color:#5a5854;margin-top:1px">● 활동 중</div>
-        </div>
-      </div>
-    </div>
-  </aside>
-
-  <div id="mob-header">
-    <div style="display:flex;align-items:center;gap:10px">
-      <div style="width:28px;height:28px;border-radius:7px;background:#e8562a;display:flex;align-items:center;justify-content:center;color:#fff">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      </div>
-      <span style="font-weight:700;font-size:15px;color:#f0ede8">GasSafety Pro</span>
-    </div>
-    <button onclick="openMob()" style="background:rgba(255,255,255,.08);border-radius:8px;padding:6px 8px;color:#c0bdb8">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-    </button>
-  </div>
-  <div id="mob-overlay" onclick="closeMob()"></div>
-  <aside id="mob-sidebar">
-    <div style="padding:20px 16px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;justify-content:space-between;align-items:center">
-      <div style="display:flex;align-items:center;gap:8px">
-        <div style="width:30px;height:30px;border-radius:8px;background:#e8562a;display:flex;align-items:center;justify-content:center;color:#fff">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        </div>
-        <span style="font-weight:700;font-size:15px;color:#f0ede8">GasSafety Pro</span>
-      </div>
-      <button onclick="closeMob()" style="background:none;color:#8a8680;padding:4px">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>
-    <nav id="nav-mob" style="padding:12px 10px"></nav>
-  </aside>
-
-  <main id="main"><div id="content">
-
-    <!-- 대시보드 -->
-    <div id="panel-dashboard" class="panel active fade-in">
-      <div style="margin-bottom:28px">
-        <h2 style="font-size:26px;font-weight:700;color:#1a1918;letter-spacing:-.02em">안전관리 현황</h2>
-        <p style="font-size:14px;color:#8a8680;margin-top:4px">오늘의 점검 현황 및 주요 알림을 확인하세요.</p>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px">
-        <div style="background:#fff;border-radius:14px;padding:20px 22px;border:1px solid #ebe9e4;border-left:4px solid #1a6ef5">
-          <div style="font-size:12px;font-weight:500;color:#8a8680;margin-bottom:8px">점검 완료율</div>
-          <div style="font-size:28px;font-weight:700;color:#1a6ef5" id="dash-rate">0%</div>
-          <div style="font-size:11px;color:#b0ada8;margin-top:6px" id="dash-rate-sub">0 / 0 항목</div>
-        </div>
-        <div style="background:#fff;border-radius:14px;padding:20px 22px;border:1px solid #ebe9e4;border-left:4px solid #e8562a">
-          <div style="font-size:12px;font-weight:500;color:#8a8680;margin-bottom:8px">부적합 사항</div>
-          <div style="font-size:28px;font-weight:700;color:#e8562a" id="dash-fail">0건</div>
-          <div style="font-size:11px;color:#b0ada8;margin-top:6px">점검 항목 중 불합격</div>
-        </div>
-        <div style="background:#fff;border-radius:14px;padding:20px 22px;border:1px solid #ebe9e4;border-left:4px solid #22a06b">
-          <div style="font-size:12px;font-weight:500;color:#8a8680;margin-bottom:8px">자격 유지</div>
-          <div style="font-size:28px;font-weight:700;color:#22a06b">적합</div>
-          <div style="font-size:11px;color:#b0ada8;margin-top:6px">차기 보수교육: 2026.11</div>
-        </div>
-      </div>
-      <div style="background:#1c1b18;border-radius:18px;padding:32px 36px;color:#fff;position:relative;overflow:hidden;margin-bottom:24px">
-        <div style="position:absolute;right:-20px;bottom:-20px;color:rgba(255,255,255,.05)">
-          <svg width="80" height="80" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-        </div>
-        <div style="position:absolute;top:0;right:0;bottom:0;width:40%;background:radial-gradient(ellipse at right,rgba(232,86,42,.18) 0%,transparent 70%)"></div>
-        <div style="position:relative;z-index:1">
-          <div style="font-size:11px;font-weight:600;color:#e8562a;letter-spacing:.08em;margin-bottom:10px;text-transform:uppercase">AI 기반 코드 검색</div>
-          <h3 style="font-size:22px;font-weight:700;margin-bottom:8px;line-height:1.3">스마트 KGS 기술 비서</h3>
-          <p style="font-size:14px;color:#8a8680;margin-bottom:22px;line-height:1.6">복잡한 가스기술기준, 이제 검색하지 말고<br>AI에게 바로 물어보세요.</p>
-          <button onclick="showTab('assistant')" style="background:#e8562a;color:#fff;padding:11px 22px;border-radius:10px;font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:8px">
-            지금 질문하기
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-          </button>
-        </div>
-      </div>
-      <div style="background:#fff8f5;border:1px solid #fdd5c5;border-radius:14px;padding:16px 20px;display:flex;gap:12px;align-items:flex-start">
-        <span style="color:#e8562a;flex-shrink:0;margin-top:1px">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        </span>
-        <div>
-          <div style="font-size:13px;font-weight:600;color:#c44020;margin-bottom:4px">동절기 CO 중독 예방 주의</div>
-          <div style="font-size:13px;color:#a03018;line-height:1.6">주거용 가스보일러의 배기통 끝단 상향 설치(FF방식) 및 CO 경보기 작동 여부를 반드시 확인하시기 바랍니다. (GC208 2.3.1)</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- KGS 기술 비서 -->
-    <div id="panel-assistant" class="panel fade-in">
-      <div style="margin-bottom:16px">
-        <h2 style="font-size:22px;font-weight:700;letter-spacing:-.02em">KGS Code 기술 비서</h2>
-        <p style="font-size:13px;color:#8a8680;margin-top:3px">KGS FU551 · GC208 · GC201 질의응답</p>
-      </div>
-      <div style="background:#fff;border-radius:16px;border:1px solid #ebe9e4;display:flex;flex-direction:column;overflow:hidden;height:calc(100vh - 200px);min-height:400px">
-        <div id="chat-msgs" style="flex:1;overflow-y:auto;padding:20px 20px 12px"></div>
-        <div style="padding:12px 16px;border-top:1px solid #ebe9e4">
-          <div style="display:flex;gap:8px;align-items:center">
-            <div style="flex:1;background:#f4f2ef;border-radius:12px;padding:10px 14px;display:flex;align-items:center">
-              <input type="text" id="chat-inp" placeholder="예: 배관과 전기콘센트 이격거리는?" onkeydown="if(event.key==='Enter')sendChat()" style="flex:1;background:none;border:none;font-size:14px;color:#1a1918"/>
-            </div>
-            <button onclick="sendChat()" style="width:42px;height:42px;border-radius:11px;background:#e8562a;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            </button>
-          </div>
-          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
-            <button onclick="setQ('계량기 이격거리')" style="font-size:12px;background:#f0ede8;color:#6a6864;padding:5px 10px;border-radius:20px;border:1px solid #dedad4">계량기 이격거리</button>
-            <button onclick="setQ('배관 매설 깊이')" style="font-size:12px;background:#f0ede8;color:#6a6864;padding:5px 10px;border-radius:20px;border:1px solid #dedad4">배관 매설 깊이</button>
-            <button onclick="setQ('정압기 유지 기준')" style="font-size:12px;background:#f0ede8;color:#6a6864;padding:5px 10px;border-radius:20px;border:1px solid #dedad4">정압기 유지 기준</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 보고서 생성기 -->
-    <div id="panel-report" class="panel fade-in">
-      <div style="margin-bottom:20px">
-        <h2 style="font-size:22px;font-weight:700;letter-spacing:-.02em">AI 보고서 생성기</h2>
-        <p style="font-size:13px;color:#8a8680;margin-top:3px">업무 내용을 입력하면 전문 기술 보고서로 변환합니다.</p>
-      </div>
-      <div class="report-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
-        <div style="background:#fff;border-radius:16px;border:1px solid #ebe9e4;padding:24px">
-          <div style="font-size:13px;font-weight:600;color:#4a4845;margin-bottom:16px;display:flex;align-items:center;gap:8px">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            활동 내용 입력
-          </div>
-          <div style="margin-bottom:14px">
-            <label style="font-size:12px;font-weight:500;color:#8a8680;display:block;margin-bottom:6px">주요 수행 업무 *</label>
-            <textarea id="rep-activity" rows="5" placeholder="예: 정압기 분해 점검 참관 및 단지 내 사용자 시설 특별 안전 점검" style="width:100%;background:#f8f7f4;border:1px solid #e5e3de;border-radius:10px;padding:10px 12px;font-size:13px;color:#1a1918;line-height:1.6"></textarea>
-          </div>
-          <div style="margin-bottom:14px">
-            <label style="font-size:12px;font-weight:500;color:#8a8680;display:block;margin-bottom:6px">특이사항 및 결과</label>
-            <textarea id="rep-results" rows="3" placeholder="예: 가스 누출 없음 확인, 노후 밸브 1개소 교체 권고" style="width:100%;background:#f8f7f4;border:1px solid #e5e3de;border-radius:10px;padding:10px 12px;font-size:13px;color:#1a1918;line-height:1.6"></textarea>
-          </div>
-          <div style="margin-bottom:20px">
-            <label style="font-size:12px;font-weight:500;color:#8a8680;display:block;margin-bottom:6px">작성자</label>
-            <input type="text" id="rep-manager" value="안전관리자" style="width:100%;background:#f8f7f4;border:1px solid #e5e3de;border-radius:10px;padding:10px 12px;font-size:13px;color:#1a1918"/>
-          </div>
-          <button id="rep-btn" onclick="genReport()" style="width:100%;background:#e8562a;color:#fff;padding:13px;border-radius:11px;font-size:14px;font-weight:600">전문 보고서로 변환 →</button>
-        </div>
-        <div style="background:#fff;border-radius:16px;border:1px solid #ebe9e4;padding:24px;display:flex;flex-direction:column">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-            <div style="font-size:13px;font-weight:600;color:#4a4845;display:flex;align-items:center;gap:8px">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-              생성된 보고서
-            </div>
-            <button id="dl-btn" onclick="dlReport()" style="display:none;font-size:12px;color:#e8562a;background:none;align-items:center;gap:4px">⬇ 저장</button>
-          </div>
-          <div id="rep-out" style="flex:1;background:#f8f7f4;border-radius:10px;border:1px dashed #dedad4;padding:16px;overflow-y:auto;min-height:300px;display:flex;align-items:center;justify-content:center;color:#c0bdb8;font-size:13px">
-            업무 내용을 입력하고 버튼을 눌러주세요.
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 현장 점검표 -->
-    <div id="panel-checklist" class="panel fade-in">
-      <div style="margin-bottom:20px">
-        <h2 style="font-size:22px;font-weight:700;letter-spacing:-.02em">현장 안전점검표</h2>
-        <p style="font-size:13px;color:#8a8680;margin-top:3px">KGS FU551 및 GC208 기준 핵심 점검 항목</p>
-      </div>
-      <div style="background:#fff;border-radius:16px;border:1px solid #ebe9e4;overflow:hidden;margin-bottom:16px">
-        <div style="padding:18px 22px;border-bottom:1px solid #f0ede8;display:flex;justify-content:space-between;align-items:center;background:#fafaf8;flex-wrap:wrap;gap:10px">
-          <div style="display:flex;gap:10px;flex-wrap:wrap">
-            <span id="ck-pass" style="font-size:13px;color:#22a06b;font-weight:600">✓ 합격 0건</span>
-            <span id="ck-fail" style="font-size:13px;color:#e8562a;font-weight:600">✗ 불합격 0건</span>
-            <span id="ck-none" style="font-size:13px;color:#8a8680">미점검 0건</span>
-          </div>
-          <div style="display:flex;gap:8px">
-            <button id="add-btn" onclick="toggleAdd()" style="font-size:13px;background:#1c1b18;color:#fff;padding:8px 14px;border-radius:9px;font-weight:500;display:flex;align-items:center;gap:6px">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>항목 추가
-            </button>
-            <button id="del-btn" onclick="toggleDel()" style="font-size:13px;background:#fff;color:#c44020;padding:8px 14px;border-radius:9px;font-weight:500;border:1px solid #fdd5c5;display:flex;align-items:center;gap:6px">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>항목 삭제
-            </button>
-          </div>
-        </div>
-        <div id="add-form" style="display:none;padding:16px 22px;border-bottom:1px solid #f0ede8;background:#fff9f7;flex-wrap:wrap;gap:10px;align-items:flex-end">
-          <input type="text" id="new-cat" placeholder="구분 (예: 배관)" style="width:130px;background:#fff;border:1px solid #e5e3de;border-radius:8px;padding:8px 11px;font-size:13px;color:#1a1918"/>
-          <input type="text" id="new-task" placeholder="점검 항목" style="width:260px;background:#fff;border:1px solid #e5e3de;border-radius:8px;padding:8px 11px;font-size:13px;color:#1a1918"/>
-          <input type="text" id="new-kgs" placeholder="KGS 코드" style="width:130px;background:#fff;border:1px solid #e5e3de;border-radius:8px;padding:8px 11px;font-size:13px;color:#1a1918"/>
-          <button onclick="addTask()" style="background:#e8562a;color:#fff;padding:9px 16px;border-radius:9px;font-size:13px;font-weight:600">추가</button>
-        </div>
-        <div id="ck-body"></div>
-        <div style="padding:16px 22px;display:flex;justify-content:flex-end">
-          <button style="background:#1c1b18;color:#fff;padding:12px 28px;border-radius:11px;font-size:14px;font-weight:600">점검 완료 및 저장</button>
-        </div>
-      </div>
-      <div style="background:#fff8f5;border:1px solid #fdd5c5;border-radius:14px;padding:16px 20px;display:flex;gap:12px;align-items:flex-start">
-        <span style="color:#e8562a;flex-shrink:0;margin-top:1px">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        </span>
-        <div>
-          <div style="font-size:13px;font-weight:600;color:#c44020;margin-bottom:4px">중요 안전 알림</div>
-          <div style="font-size:13px;color:#a03018;line-height:1.6">동절기 일산화탄소 중독 사고 예방을 위해 주거용 가스보일러의 배기통 끝단 상향 설치(FF방식) 여부를 반드시 확인하시기 바랍니다. (GC208 2.3.1)</div>
-        </div>
-      </div>
-    </div>
-
-  </div></main>
-</div>
-
+<div id="root"></div>
 <script>
-// ── 데이터 ──
-var checks=[
-  {id:1,category:'가스계량기',task:'설치 높이 적정성 (1.6m~2.0m)',status:'none',kgs:'FU551 2.4.4.3'},
-  {id:2,category:'가스계량기',task:'전기 접속기 이격거리 (30cm 이상)',status:'none',kgs:'FU551 2.4.4.3'},
-  {id:3,category:'가스계량기',task:'설치 장소 환기 양호 여부',status:'none',kgs:'FU551 2.4.4.1'},
-  {id:4,category:'배관',task:'노출배관 도색 및 부식 상태',status:'none',kgs:'FU551 2.5.4'},
-  {id:5,category:'배관',task:'배관 고정 클램프 간격 적정',status:'none',kgs:'FU551 2.5.3'},
-  {id:12,category:'배관',task:'전기시설물과 이격거리 적정',status:'none',kgs:'FU551 2.5.6'},
-  {id:6,category:'가스보일러',task:'배기통 이탈방지 및 굴곡부 확인',status:'none',kgs:'GC208 2.3.1'},
-  {id:7,category:'가스보일러',task:'CO 경보기 설치 및 작동 여부',status:'none',kgs:'GC208'},
-  {id:11,category:'가스보일러',task:'물배관 연결 여부 확인',status:'none',kgs:'GC208 2.2.1'},
-  {id:8,category:'정압기',task:'안전밸브 작동 여부 확인',status:'none',kgs:'FU551 2.3.2'},
-  {id:9,category:'정압기',task:'가스필터 이물질 확인',status:'none',kgs:'FU551 2.3.4'},
-  {id:10,category:'정압기',task:'OPCO 작동 여부 확인',status:'none',kgs:'FU551 2.3.3'},
-];
-
-var chatHistory=[{role:'assistant',content:'안녕하세요! 도시가스 안전관리 AI 비서입니다.\nKGS FU551 등 기술기준에 대해 궁금한 점을 물어보세요.'}];
-
-// 시연용 답변 데이터
-var demoAnswers={
-  '계량기 이격거리':'KGS FU551 2.4.4.3 기준에 따르면,\n\n• 전기계량기 및 개폐기와의 이격거리: 60cm 이상\n• 전기접속기(콘센트, 스위치)와의 이격거리: 30cm 이상\n• 절연전선과의 이격거리: 10cm 이상\n• 굴뚝, 연통과의 이격거리: 30cm 이상\n\n가스계량기 설치 높이는 바닥으로부터 1.6m 이상 2.0m 이하로 설치해야 합니다.',
-  '배관 매설 깊이':'KGS FU551 기준에 따른 배관 매설 깊이:\n\n• 도로 매설 시: 1.2m 이상\n• 도로 외 매설 시: 0.6m 이상\n• 폴리에틸렌(PE) 배관: 0.3m 이상 (보호판 설치 시)\n• 고압 배관: 1.5m 이상\n\n배관 상부에는 매설 표시테이프를 설치하고, 부식방지 조치를 취해야 합니다.',
-  '정압기 유지 기준':'KGS FU551 2.3 기준에 따른 정압기 유지관리:\n\n• 정기점검: 1회/년 이상\n• 작동압력 확인: 입구압력, 출구압력, 폐쇄압력 측정\n• 안전밸브 작동압력: 최고허용압력의 1.1배 이하\n• 필터 교체: 압력손실 기준치 초과 시\n• OPCO 작동 확인: 설정압력의 1.25배에서 작동 여부\n\n정압기실은 환기 설비를 갖추고 항상 잠금 상태를 유지해야 합니다.',
+const {
+  useState,
+  useRef,
+  useEffect
+} = React;
+const DEMO_ANSWERS = {
+  "계량기": "KGS FU551 2.4.4.3 기준에 따르면,\n\n• 전기계량기 및 개폐기와의 이격거리: 60cm 이상\n• 전기접속기(콘센트, 스위치)와의 이격거리: 30cm 이상\n• 절연전선과의 이격거리: 10cm 이상\n• 굴뚝, 연통과의 이격거리: 30cm 이상\n\n가스계량기 설치 높이는 바닥으로부터 1.6m 이상 2.0m 이하로 설치해야 합니다.",
+  "이격": "KGS FU551 2.4.4.3 기준에 따르면,\n\n• 전기계량기 및 개폐기와의 이격거리: 60cm 이상\n• 전기접속기(콘센트, 스위치)와의 이격거리: 30cm 이상\n• 절연전선과의 이격거리: 10cm 이상\n• 굴뚝, 연통과의 이격거리: 30cm 이상\n\n가스계량기 설치 높이는 바닥으로부터 1.6m 이상 2.0m 이하로 설치해야 합니다.",
+  "매설": "KGS FU551 기준에 따른 배관 매설 깊이:\n\n• 도로 매설 시: 1.2m 이상\n• 도로 외 매설 시: 0.6m 이상\n• 폴리에틸렌(PE) 배관: 0.3m 이상 (보호판 설치 시)\n• 고압 배관: 1.5m 이상\n\n배관 상부에는 매설 표시테이프를 설치하고, 부식방지 조치를 취해야 합니다.",
+  "깊이": "KGS FU551 기준에 따른 배관 매설 깊이:\n\n• 도로 매설 시: 1.2m 이상\n• 도로 외 매설 시: 0.6m 이상\n• 폴리에틸렌(PE) 배관: 0.3m 이상 (보호판 설치 시)\n• 고압 배관: 1.5m 이상\n\n배관 상부에는 매설 표시테이프를 설치하고, 부식방지 조치를 취해야 합니다.",
+  "정압기": "KGS FU551 2.3 기준에 따른 정압기 유지관리:\n\n• 정기점검: 1회/년 이상\n• 작동압력 확인: 입구압력, 출구압력, 폐쇄압력 측정\n• 안전밸브 작동압력: 최고허용압력의 1.1배 이하\n• 필터 교체: 압력손실 기준치 초과 시\n• OPCO 작동 확인: 설정압력의 1.25배에서 작동 여부\n\n정압기실은 환기 설비를 갖추고 항상 잠금 상태를 유지해야 합니다.",
+  "유지": "KGS FU551 2.3 기준에 따른 정압기 유지관리:\n\n• 정기점검: 1회/년 이상\n• 작동압력 확인: 입구압력, 출구압력, 폐쇄압력 측정\n• 안전밸브 작동압력: 최고허용압력의 1.1배 이하\n• 필터 교체: 압력손실 기준치 초과 시\n• OPCO 작동 확인: 설정압력의 1.25배에서 작동 여부\n\n정압기실은 환기 설비를 갖추고 항상 잠금 상태를 유지해야 합니다."
 };
+const DEMO_FALLBACK = "KGS FU551 기준에 따라 안전관리를 수행하시기 바랍니다.\n\n더 구체적인 질문을 입력해 주시면 상세 기준을 안내드리겠습니다.\n\n예시: \"계량기 이격거리\", \"배관 매설 깊이\", \"정압기 유지 기준\"";
+function getDemoAnswer(text) {
+  for (const key in DEMO_ANSWERS) {
+    if (text.indexOf(key) > -1) return DEMO_ANSWERS[key];
+  }
+  return DEMO_FALLBACK;
+}
+const SAMPLE_REPORT_TEMPLATE = (activity, results, manager) => `【 도시가스 안전관리 기술보고서 】
 
-var expanded=['가스계량기'];
-var delMode=false;
-var repText='';
-var curTab='dashboard';
-
-// ── 샘플 보고서 ──
-var sampleReport=`【 도시가스 안전관리 기술보고서 】
-
-작성일자: 2026년 8월 5일
-작성자: 안전관리자
-소속: 대성청정에너지(주) 안전기획팀
+작성일자: ${new Date().toLocaleDateString("ko-KR")}
+작성자: ${manager}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 1. 업무 개요
 
-당일 안동 관할 지역 내 정압기 분해 점검 참관 및 단지 내 사용자 시설에 대한 특별 안전점검을 실시하였음.
+당일 관할 지역 내 ${activity}을(를) 실시하였음.
 
 2. 주요 수행 업무
 
-가. 정압기 분해 점검 참관
-  - 대상: 안동 법상동 정압기 1호기
-  - 점검 항목: 필터 이물질, 안전밸브 작동, OPCO 설정값 확인
-  - 결과: 이상 없음
-
-나. 사용자 시설 특별 안전점검
-  - 대상 세대: 총 15세대
-  - 점검 항목: 가스계량기, 중간밸브, 연소기 연결부 누출 여부
-  - 점검 방법: 비눗물 및 가스누출 감지기 사용
+가. ${activity}
+  - 점검 항목: 관련 설비 전반의 기술기준 적합 여부
+  - 점검 방법: 육안 점검 및 계측기를 통한 수치 확인
 
 3. 특이사항 및 조치결과
 
-  - 가스 누출 없음 확인 (전 세대 이상 없음)
-  - 노후 중간밸브 1개소 교체 권고 (△△동 ○○호)
-  - 교체 권고 사항은 차기 점검 시 이행 여부 확인 예정
+  ${results ? "- " + results : "- 특이사항 없음"}
 
 4. 종합 의견
 
-금번 점검을 통해 관할 지역 내 사용자 시설의 안전 상태가 전반적으로 양호함을 확인하였으며, 노후 설비에 대한 지속적인 모니터링이 필요함.
+금번 점검을 통해 관할 지역 내 시설의 안전 상태를 확인하였으며, 관련 기준에 따라 지속적인 모니터링이 필요함.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-※ 본 보고서는 KGS FU551 기준에 의거하여 작성되었습니다.`;
-
-// ── 네비 ──
-var NAVS=[
-  {id:'dashboard',label:'대시보드',path:'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'},
-  {id:'assistant',label:'KGS 기술 비서',path:'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'},
-  {id:'report',label:'보고서 생성기',path:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'},
-  {id:'checklist',label:'현장 점검표',path:'M9 11l3 3L22 4 M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'},
-];
-
-function buildNav(el,mob){
-  el.innerHTML=NAVS.map(function(n){
-    return '<button class="nav-btn'+(n.id===curTab?' active':'')+'" onclick="showTab(\''+n.id+'\')'+( mob?';closeMob()':'')+'">'
-      +'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="'+n.path+'"/></svg>'
-      +'<span>'+n.label+'</span></button>';
-  }).join('');
-}
-
-function showTab(t){
-  curTab=t;
-  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
-  document.getElementById('panel-'+t).classList.add('active');
-  buildNav(document.getElementById('nav-desk'),false);
-  buildNav(document.getElementById('nav-mob'),true);
-  if(t==='checklist')renderCk();
-  if(t==='dashboard')updateDash();
-  if(t==='assistant')renderChat();
-}
-
-function openMob(){document.getElementById('mob-sidebar').style.display='flex';document.getElementById('mob-overlay').style.display='block';}
-function closeMob(){document.getElementById('mob-sidebar').style.display='none';document.getElementById('mob-overlay').style.display='none';}
-
-// ── 챗 ──
-function renderChat(){
-  var el=document.getElementById('chat-msgs');
-  el.innerHTML=chatHistory.map(function(m){
-    return '<div style="display:flex;justify-content:'+(m.role==='user'?'flex-end':'flex-start')+';margin-bottom:12px">'
-      +(m.role==='assistant'?'<div style="width:28px;height:28px;border-radius:8px;background:#e8562a;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;margin-right:10px;margin-top:2px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>':'')
-      +'<div style="max-width:78%;background:'+(m.role==='user'?'#1c1b18':'#f4f2ef')+';color:'+(m.role==='user'?'#f0ede8':'#2a2826')+';border-radius:'+(m.role==='user'?'14px 14px 4px 14px':'14px 14px 14px 4px')+';padding:12px 16px;font-size:14px;line-height:1.65;white-space:pre-wrap">'+m.content+'</div>'
-      +'</div>';
-  }).join('');
-  el.scrollTop=el.scrollHeight;
-}
-
-function setQ(q){document.getElementById('chat-inp').value=q;}
-
-function sendChat(){
-  var inp=document.getElementById('chat-inp');
-  var txt=inp.value.trim();
-  if(!txt)return;
-  inp.value='';
-  chatHistory.push({role:'user',content:txt});
-  renderChat();
-
-  // 시연용 답변 (API 없이)
-  setTimeout(function(){
-    var reply=demoAnswers[txt];
-    if(!reply){
-      // 키워드 매칭
-      if(txt.indexOf('계량기')>-1||txt.indexOf('이격')>-1) reply=demoAnswers['계량기 이격거리'];
-      else if(txt.indexOf('매설')>-1||txt.indexOf('깊이')>-1) reply=demoAnswers['배관 매설 깊이'];
-      else if(txt.indexOf('정압기')>-1||txt.indexOf('유지')>-1) reply=demoAnswers['정압기 유지 기준'];
-      else reply='KGS FU551 기준에 따라 안전관리를 수행하시기 바랍니다.\n\n더 구체적인 질문을 입력해 주시면 상세 기준을 안내드리겠습니다.\n\n예시: "계량기 이격거리", "배관 매설 깊이", "정압기 유지 기준"';
+※ 본 보고서는 KGS 기술기준에 의거하여 작성되었습니다.`;
+const DEFAULT_CHECKS = [{
+  id: 1,
+  category: "가스계량기",
+  task: "설치 높이 적정성 (1.6m~2.0m)",
+  status: "none",
+  kgs: "FU551 2.4.4.3.2(3)"
+}, {
+  id: 2,
+  category: "가스계량기",
+  task: "전기계량기·전기개폐기(0.6m)·전기점멸기·전기접속기(0.3m) 이격거리",
+  status: "none",
+  kgs: "FU551 2.4.4.3.2(4)"
+}, {
+  id: 3,
+  category: "가스계량기",
+  task: "설치 장소 환기 양호 여부",
+  status: "none",
+  kgs: "FU551 2.4.4.3.2(1)"
+}, {
+  id: 4,
+  category: "배관",
+  task: "노출배관 도색(황색) 및 부식 상태",
+  status: "none",
+  kgs: "FU551 2.5.7.2 / 2.5.4.3.3(1)"
+}, {
+  id: 5,
+  category: "배관",
+  task: "배관 고정 클램프 간격 적정 (13㎜미만 1m·13~33㎜ 2m·33㎜이상 3m)",
+  status: "none",
+  kgs: "FU551 2.5.4.3.2"
+}, {
+  id: 12,
+  category: "배관",
+  task: "전기시설물과 이격거리 적정",
+  status: "none",
+  kgs: "FU551 2.5.4.5.8"
+}, {
+  id: 13,
+  category: "배관",
+  task: "입상관 밸브 설치 높이 (1.6m~2.0m)",
+  status: "none",
+  kgs: "FU551 2.5.4.3.1"
+}, {
+  id: 6,
+  category: "가스보일러",
+  task: "배기통 이탈방지 및 굴곡부 확인",
+  status: "none",
+  kgs: "GC208 2.3.1"
+}, {
+  id: 7,
+  category: "가스보일러",
+  task: "CO 경보기 설치 및 작동 여부",
+  status: "none",
+  kgs: "GC208"
+}, {
+  id: 11,
+  category: "가스보일러",
+  task: "물배관 연결 여부 확인",
+  status: "none",
+  kgs: "GC208 2.2.1"
+}, {
+  id: 8,
+  category: "정압기",
+  task: "안전밸브 및 가스방출관(지면 5m 이상) 설치 확인",
+  status: "none",
+  kgs: "FU551 2.8.1"
+}, {
+  id: 9,
+  category: "정압기",
+  task: "필터·스트레이너 청소 및 이물질 확인",
+  status: "none",
+  kgs: "FU551 3.3.4(2) / 3.3.6"
+}, {
+  id: 10,
+  category: "정압기",
+  task: "긴급차단장치(OPCO) 작동 여부",
+  status: "none",
+  kgs: "FU551 2.8.3"
+}, {
+  id: 14,
+  category: "정압기",
+  task: "출구측 압력 경보장치 작동 확인",
+  status: "none",
+  kgs: "FU551 2.8.6.1"
+}, {
+  id: 15,
+  category: "정압기",
+  task: "가스누출경보기 작동 상태 점검 (주1회)",
+  status: "none",
+  kgs: "FU551 3.3.8.1 / 2.8.2.1"
+}, {
+  id: 16,
+  category: "정압기",
+  task: "정압기실 경계표지 설치 여부",
+  status: "none",
+  kgs: "FU551 2.11.1"
+}];
+const icons = {
+  shield: /*#__PURE__*/React.createElement("svg", {
+    width: "20",
+    height: "20",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
+  })),
+  chat: /*#__PURE__*/React.createElement("svg", {
+    width: "20",
+    height: "20",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+  })),
+  file: /*#__PURE__*/React.createElement("svg", {
+    width: "20",
+    height: "20",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+  }), /*#__PURE__*/React.createElement("polyline", {
+    points: "14 2 14 8 20 8"
+  })),
+  check: /*#__PURE__*/React.createElement("svg", {
+    width: "20",
+    height: "20",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("polyline", {
+    points: "9 11 12 14 22 5"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"
+  })),
+  send: /*#__PURE__*/React.createElement("svg", {
+    width: "18",
+    height: "18",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("line", {
+    x1: "22",
+    y1: "2",
+    x2: "11",
+    y2: "13"
+  }), /*#__PURE__*/React.createElement("polygon", {
+    points: "22 2 15 22 11 13 2 9 22 2"
+  })),
+  alert: /*#__PURE__*/React.createElement("svg", {
+    width: "18",
+    height: "18",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+  }), /*#__PURE__*/React.createElement("line", {
+    x1: "12",
+    y1: "9",
+    x2: "12",
+    y2: "13"
+  }), /*#__PURE__*/React.createElement("line", {
+    x1: "12",
+    y1: "17",
+    x2: "12.01",
+    y2: "17"
+  })),
+  zap: /*#__PURE__*/React.createElement("svg", {
+    width: "80",
+    height: "80",
+    viewBox: "0 0 24 24",
+    fill: "currentColor",
+    stroke: "none"
+  }, /*#__PURE__*/React.createElement("polygon", {
+    points: "13 2 3 14 12 14 11 22 21 10 12 10 13 2"
+  })),
+  arrow: /*#__PURE__*/React.createElement("svg", {
+    width: "16",
+    height: "16",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("line", {
+    x1: "5",
+    y1: "12",
+    x2: "19",
+    y2: "12"
+  }), /*#__PURE__*/React.createElement("polyline", {
+    points: "12 5 19 12 12 19"
+  })),
+  plus: /*#__PURE__*/React.createElement("svg", {
+    width: "15",
+    height: "15",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2.5",
+    strokeLinecap: "round"
+  }, /*#__PURE__*/React.createElement("line", {
+    x1: "12",
+    y1: "5",
+    x2: "12",
+    y2: "19"
+  }), /*#__PURE__*/React.createElement("line", {
+    x1: "5",
+    y1: "12",
+    x2: "19",
+    y2: "12"
+  })),
+  download: /*#__PURE__*/React.createElement("svg", {
+    width: "15",
+    height: "15",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+  }), /*#__PURE__*/React.createElement("polyline", {
+    points: "7 10 12 15 17 10"
+  }), /*#__PURE__*/React.createElement("line", {
+    x1: "12",
+    y1: "15",
+    x2: "12",
+    y2: "3"
+  })),
+  menu: /*#__PURE__*/React.createElement("svg", {
+    width: "22",
+    height: "22",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round"
+  }, /*#__PURE__*/React.createElement("line", {
+    x1: "3",
+    y1: "6",
+    x2: "21",
+    y2: "6"
+  }), /*#__PURE__*/React.createElement("line", {
+    x1: "3",
+    y1: "12",
+    x2: "21",
+    y2: "12"
+  }), /*#__PURE__*/React.createElement("line", {
+    x1: "3",
+    y1: "18",
+    x2: "21",
+    y2: "18"
+  })),
+  x: /*#__PURE__*/React.createElement("svg", {
+    width: "20",
+    height: "20",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round"
+  }, /*#__PURE__*/React.createElement("line", {
+    x1: "18",
+    y1: "6",
+    x2: "6",
+    y2: "18"
+  }), /*#__PURE__*/React.createElement("line", {
+    x1: "6",
+    y1: "6",
+    x2: "18",
+    y2: "18"
+  })),
+  hat: /*#__PURE__*/React.createElement("svg", {
+    width: "18",
+    height: "18",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M2 18h20v2H2z"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M18 18V9l-6-6-6 6v9"
+  })),
+  ok: /*#__PURE__*/React.createElement("svg", {
+    width: "16",
+    height: "16",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2.5",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("polyline", {
+    points: "20 6 9 17 4 12"
+  })),
+  fail: /*#__PURE__*/React.createElement("svg", {
+    width: "16",
+    height: "16",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2.5",
+    strokeLinecap: "round"
+  }, /*#__PURE__*/React.createElement("line", {
+    x1: "18",
+    y1: "6",
+    x2: "6",
+    y2: "18"
+  }), /*#__PURE__*/React.createElement("line", {
+    x1: "6",
+    y1: "6",
+    x2: "18",
+    y2: "18"
+  })),
+  trash: /*#__PURE__*/React.createElement("svg", {
+    width: "15",
+    height: "15",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("polyline", {
+    points: "3 6 5 6 21 6"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M10 11v6"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M14 11v6"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"
+  }))
+};
+function App() {
+  const [tab, setTab] = useState("dashboard");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [chatMsgs, setChatMsgs] = useState([{
+    role: "assistant",
+    content: "안녕하세요! 도시가스 안전관리 AI 비서입니다.\nKGS FU551 등 기술기준에 대해 궁금한 점을 물어보세요."
+  }]);
+  const [userInput, setUserInput] = useState("");
+  const [typing, setTyping] = useState(false);
+  const chatEndRef = useRef(null);
+  const [reportInput, setReportInput] = useState({
+    activity: "",
+    results: "",
+    manager: "대성청정에너지 안전기획팀 과장 김길영"
+  });
+  const [report, setReport] = useState("");
+  const [genLoading, setGenLoading] = useState(false);
+  const [checks, setChecks] = useState(DEFAULT_CHECKS);
+  const [newTask, setNewTask] = useState({
+    category: "",
+    task: "",
+    kgs: ""
+  });
+  const [showAdd, setShowAdd] = useState(false);
+  const [deleteMode, setDeleteMode] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState(["가스계량기"]);
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({
+      behavior: "smooth"
+    });
+  }, [chatMsgs, typing]);
+  function sendMsg() {
+    if (!userInput.trim()) return;
+    const msgs = [...chatMsgs, {
+      role: "user",
+      content: userInput
+    }];
+    setChatMsgs(msgs);
+    const question = userInput;
+    setUserInput("");
+    setTyping(true);
+    setTimeout(() => {
+      const reply = getDemoAnswer(question);
+      setChatMsgs([...msgs, {
+        role: "assistant",
+        content: reply
+      }]);
+      setTyping(false);
+    }, 800);
+  }
+  function genReport() {
+    if (!reportInput.activity) return;
+    setGenLoading(true);
+    setTimeout(() => {
+      const result = SAMPLE_REPORT_TEMPLATE(reportInput.activity, reportInput.results, reportInput.manager);
+      setReport(result);
+      setGenLoading(false);
+    }, 1200);
+  }
+  function cycleCheck(id) {
+    setChecks(checks.map(c => {
+      if (c.id !== id) return c;
+      const next = c.status === "none" ? "pass" : c.status === "pass" ? "fail" : "none";
+      return {
+        ...c,
+        status: next
+      };
+    }));
+  }
+  function deleteItem(id) {
+    setChecks(checks.filter(c => c.id !== id));
+  }
+  function addTask() {
+    if (!newTask.task) return;
+    setChecks([...checks, {
+      ...newTask,
+      id: Date.now(),
+      status: "none"
+    }]);
+    setNewTask({
+      category: "",
+      task: "",
+      kgs: ""
+    });
+    setShowAdd(false);
+  }
+  const passCount = checks.filter(c => c.status === "pass").length;
+  const failCount = checks.filter(c => c.status === "fail").length;
+  const navItems = [{
+    id: "dashboard",
+    icon: icons.shield,
+    label: "대시보드"
+  }, {
+    id: "assistant",
+    icon: icons.chat,
+    label: "기술 비서"
+  }, {
+    id: "report",
+    icon: icons.file,
+    label: "보고서 생성기"
+  }, {
+    id: "checklist",
+    icon: icons.check,
+    label: "현장 점검표"
+  }];
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      height: "100vh",
+      background: "#f8f7f4",
+      fontFamily: "'Pretendard', 'Apple SD Gothic Neo', sans-serif",
+      overflow: "hidden",
+      color: "#1a1a1a"
     }
-    chatHistory.push({role:'assistant',content:reply});
-    renderChat();
-  },800);
+  }, /*#__PURE__*/React.createElement("style", null, `
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d0cec8; border-radius: 2px; }
+        textarea, input[type=text] { outline: none; font-family: inherit; resize: none; }
+        button { cursor: pointer; font-family: inherit; border: none; }
+        .nav-btn { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-radius: 10px; width: 100%; background: transparent; color: #8a8680; font-size: 14px; font-weight: 500; transition: all 0.15s; }
+        .nav-btn:hover { background: rgba(255,255,255,0.06); color: #e8e5df; }
+        .nav-btn.active { background: rgba(255,255,255,0.12); color: #ffffff; }
+        .fade-in { animation: fadeIn 0.35s ease; }
+        .chip-scroll { scrollbar-width: thin; scrollbar-color: #dedad4 transparent; }
+        .chip-scroll::-webkit-scrollbar { height: 4px; }
+        .chip-scroll::-webkit-scrollbar-thumb { background: #dedad4; border-radius: 4px; }
+        .chip-scroll::-webkit-scrollbar-track { background: transparent; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        .tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 5px; letter-spacing: 0.02em; }
+        .check-btn { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+        .check-btn:hover { transform: scale(1.1); }
+        .dot-pulse { display: flex; gap: 4px; align-items: center; }
+        .dot-pulse span { width: 6px; height: 6px; border-radius: 50%; background: #9a9690; animation: dp 1.2s infinite ease-in-out; }
+        .dot-pulse span:nth-child(2) { animation-delay: 0.2s; }
+        .dot-pulse span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes dp { 0%,80%,100%{opacity:0.3;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
+        .mobile-overlay { display: none; }
+        @media (max-width: 768px) {
+          .sidebar-desktop { display: none !important; }
+          .sidebar-mobile { display: flex !important; }
+          .mobile-header { display: flex !important; }
+          .mobile-overlay { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 40; }
+        }
+        @media (min-width: 769px) {
+          .mobile-header { display: none !important; }
+          .sidebar-mobile { display: none !important; }
+        }
+      `), /*#__PURE__*/React.createElement("aside", {
+    className: "sidebar-desktop",
+    style: {
+      width: 230,
+      background: "#16291e",
+      display: "flex",
+      flexDirection: "column",
+      flexShrink: 0,
+      borderRight: "1px solid rgba(255,255,255,0.06)"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "24px 20px 20px",
+      borderBottom: "1px solid rgba(255,255,255,0.07)"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 34,
+      height: 34,
+      borderRadius: 9,
+      background: "#e8562a",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "#fff"
+    }
+  }, icons.shield), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "baseline",
+      gap: 5
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontWeight: 700,
+      fontSize: 16,
+      color: "#f0ede8"
+    }
+  }, "SAION"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 12,
+      color: "#8a8680"
+    }
+  }, "세이온")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 9.5,
+      color: "#7a8f80",
+      marginTop: 1,
+      lineHeight: 1.3
+    }
+  }, "Safe+AI+ON, 항상 켜져있는 24시간 안전AI")))), /*#__PURE__*/React.createElement("nav", {
+    style: {
+      padding: "12px 10px",
+      flex: 1
+    }
+  }, navItems.map(n => /*#__PURE__*/React.createElement("button", {
+    key: n.id,
+    className: `nav-btn ${tab === n.id ? "active" : ""}`,
+    onClick: () => setTab(n.id)
+  }, n.icon, /*#__PURE__*/React.createElement("span", null, n.label)))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "12px 10px 20px",
+      borderTop: "1px solid rgba(255,255,255,0.07)"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 10,
+      padding: "10px 12px",
+      background: "rgba(255,255,255,0.06)",
+      borderRadius: 10
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 34,
+      height: 34,
+      borderRadius: "50%",
+      background: "#e8562a22",
+      border: "1px solid #e8562a55",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "#e8562a"
+    }
+  }, icons.hat), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      fontWeight: 600,
+      color: "#e0ddd8"
+    }
+  }, "안전관리자"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      color: "#5a5854",
+      marginTop: 1
+    }
+  }, "● 활동 중"))))), /*#__PURE__*/React.createElement("div", {
+    className: "mobile-header",
+    style: {
+      display: "none",
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 50,
+      background: "#16291e",
+      padding: "14px 16px",
+      alignItems: "center",
+      justifyContent: "space-between",
+      borderBottom: "1px solid rgba(255,255,255,0.07)"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      color: "#f0ede8"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 28,
+      height: 28,
+      borderRadius: 7,
+      background: "#e8562a",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "#fff"
+    }
+  }, icons.shield), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontWeight: 700,
+      fontSize: 15
+    }
+  }, "SAION ", /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontWeight: 500,
+      fontSize: 12,
+      color: "#a8a49e"
+    }
+  }, "세이온"))), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setSidebarOpen(true),
+    style: {
+      background: "rgba(255,255,255,0.08)",
+      borderRadius: 8,
+      padding: "6px 8px",
+      color: "#c0bdb8"
+    }
+  }, icons.menu)), sidebarOpen && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "mobile-overlay",
+    onClick: () => setSidebarOpen(false)
+  }), /*#__PURE__*/React.createElement("aside", {
+    className: "sidebar-mobile",
+    style: {
+      position: "fixed",
+      top: 0,
+      left: 0,
+      bottom: 0,
+      width: 230,
+      background: "#16291e",
+      zIndex: 50,
+      flexDirection: "column"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "20px 16px 16px",
+      borderBottom: "1px solid rgba(255,255,255,0.07)",
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 30,
+      height: 30,
+      borderRadius: 8,
+      background: "#e8562a",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "#fff"
+    }
+  }, icons.shield), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontWeight: 700,
+      fontSize: 15,
+      color: "#f0ede8"
+    }
+  }, "SAION ", /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontWeight: 500,
+      fontSize: 12,
+      color: "#a8a49e"
+    }
+  }, "세이온"))), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setSidebarOpen(false),
+    style: {
+      background: "none",
+      color: "#8a8680",
+      padding: 4
+    }
+  }, icons.x)), /*#__PURE__*/React.createElement("nav", {
+    style: {
+      padding: "12px 10px"
+    }
+  }, navItems.map(n => /*#__PURE__*/React.createElement("button", {
+    key: n.id,
+    className: `nav-btn ${tab === n.id ? "active" : ""}`,
+    onClick: () => {
+      setTab(n.id);
+      setSidebarOpen(false);
+    }
+  }, n.icon, /*#__PURE__*/React.createElement("span", null, n.label)))))), /*#__PURE__*/React.createElement("main", {
+    style: {
+      flex: 1,
+      overflowY: "auto",
+      paddingTop: 0
+    },
+    id: "main-scroll"
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 860,
+      margin: "0 auto",
+      padding: "32px 24px 48px"
+    },
+    className: "main-pad"
+  }, /*#__PURE__*/React.createElement("style", null, `
+            @media(max-width:768px){.main-pad{padding-top:72px !important;}}
+          `), tab === "dashboard" && /*#__PURE__*/React.createElement("div", {
+    className: "fade-in"
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 28
+    }
+  }, /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontSize: 26,
+      fontWeight: 700,
+      color: "#1a1918",
+      letterSpacing: "-0.02em"
+    }
+  }, "안전관리 현황"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 14,
+      color: "#8a8680",
+      marginTop: 4
+    }
+  }, "오늘의 점검 현황 및 주요 알림을 확인하세요.")), (() => {
+    const completionRate = checks.length ? Math.round((passCount + failCount) / checks.length * 100) : 0;
+    const isFullyInspected = completionRate === 100;
+    const hasFail = failCount > 0;
+    const isQualified = isFullyInspected && !hasFail;
+    const uncheckedCount = checks.length - passCount - failCount;
+    const failedItems = checks.filter(c => c.status === "fail");
+    const maxNames = 2;
+    const failNames = failedItems.slice(0, maxNames).map(c => c.task).join(", ");
+    const extraFailCount = failedItems.length - maxNames;
+    const reasonParts = [];
+    if (hasFail) reasonParts.push(`${failNames}${extraFailCount > 0 ? ` 외 ${extraFailCount}건` : ""} 불합격`);
+    if (uncheckedCount > 0) reasonParts.push(`미점검 ${uncheckedCount}건`);
+    const reason = reasonParts.join(" · ");
+    return /*#__PURE__*/React.createElement(React.Fragment, null, !isQualified && /*#__PURE__*/React.createElement("div", {
+      style: {
+        background: "#fff0ee",
+        border: "1px solid #fdd5c5",
+        borderRadius: 12,
+        padding: "12px 16px",
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        marginBottom: 16
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "#e8562a",
+        flexShrink: 0
+      }
+    }, icons.alert), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 13,
+        color: "#c44020"
+      }
+    }, /*#__PURE__*/React.createElement("strong", {
+      style: {
+        fontWeight: 700
+      }
+    }, "자격 유지 부적합"), " — ", reason)), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+        gap: 14,
+        marginBottom: 24
+      }
+    }, [{
+      label: "점검 완료율",
+      value: `${completionRate}%`,
+      color: "#1a6ef5",
+      sub: `${passCount + failCount} / ${checks.length} 항목`
+    }, {
+      label: "부적합 사항",
+      value: `${failCount}건`,
+      color: "#e8562a",
+      sub: "점검 항목 중 불합격"
+    }, isQualified ? {
+      label: "자격 유지",
+      value: "적합",
+      color: "#22a06b",
+      sub: "차기 보수교육: 2026.11"
+    } : {
+      label: "자격 유지",
+      value: "부적합",
+      color: "#e8562a",
+      sub: "전체 항목 점검 미완료"
+    }].map((card, i) => /*#__PURE__*/React.createElement("div", {
+      key: i,
+      style: {
+        background: "#fff",
+        borderRadius: 14,
+        padding: "20px 22px",
+        border: "1px solid #ebe9e4",
+        borderLeft: `4px solid ${card.color}`
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 12,
+        fontWeight: 500,
+        color: "#8a8680",
+        marginBottom: 8
+      }
+    }, card.label), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 28,
+        fontWeight: 700,
+        color: card.color,
+        letterSpacing: "-0.03em"
+      }
+    }, card.value), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 11,
+        color: "#b0ada8",
+        marginTop: 6
+      }
+    }, card.sub)))));
+  })(), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+      gap: 16,
+      marginBottom: 24
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#16291e",
+      borderRadius: 18,
+      padding: "26px 24px",
+      color: "#fff",
+      position: "relative",
+      overflow: "hidden"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "absolute",
+      right: -20,
+      bottom: -20,
+      color: "rgba(255,255,255,0.05)"
+    }
+  }, icons.zap), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "absolute",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      width: "60%",
+      background: "radial-gradient(ellipse at right, rgba(232,86,42,0.18) 0%, transparent 70%)"
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "relative",
+      zIndex: 1
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      fontWeight: 600,
+      color: "#e8562a",
+      letterSpacing: "0.08em",
+      marginBottom: 10,
+      textTransform: "uppercase"
+    }
+  }, "AI 기반 코드 검색"), /*#__PURE__*/React.createElement("h3", {
+    style: {
+      fontSize: 19,
+      fontWeight: 700,
+      marginBottom: 8,
+      lineHeight: 1.3
+    }
+  }, "스마트 KGS 기술 비서"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      color: "#8a8680",
+      marginBottom: 20,
+      lineHeight: 1.6
+    }
+  }, "복잡한 가스기술기준,", /*#__PURE__*/React.createElement("br", null), "AI에게 바로 물어보세요."), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setTab("assistant"),
+    style: {
+      background: "#e8562a",
+      color: "#fff",
+      padding: "10px 18px",
+      borderRadius: 10,
+      fontSize: 13,
+      fontWeight: 600,
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 8,
+      transition: "opacity 0.15s"
+    },
+    onMouseOver: e => e.currentTarget.style.opacity = "0.9",
+    onMouseOut: e => e.currentTarget.style.opacity = "1"
+  }, "지금 질문하기 ", icons.arrow))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#16291e",
+      borderRadius: 18,
+      padding: "26px 24px",
+      color: "#fff",
+      position: "relative",
+      overflow: "hidden"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "absolute",
+      right: -20,
+      bottom: -20,
+      color: "rgba(255,255,255,0.05)"
+    }
+  }, icons.file), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "absolute",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      width: "60%",
+      background: "radial-gradient(ellipse at right, rgba(26,110,245,0.18) 0%, transparent 70%)"
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "relative",
+      zIndex: 1
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      fontWeight: 600,
+      color: "#1a6ef5",
+      letterSpacing: "0.08em",
+      marginBottom: 10,
+      textTransform: "uppercase"
+    }
+  }, "AI 기반 문서 작성"), /*#__PURE__*/React.createElement("h3", {
+    style: {
+      fontSize: 19,
+      fontWeight: 700,
+      marginBottom: 8,
+      lineHeight: 1.3
+    }
+  }, "보고서 생성기"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      color: "#8a8680",
+      marginBottom: 20,
+      lineHeight: 1.6
+    }
+  }, "활동 내용만 입력하면", /*#__PURE__*/React.createElement("br", null), "전문 기술 보고서로 변환해요."), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setTab("report"),
+    style: {
+      background: "#1a6ef5",
+      color: "#fff",
+      padding: "10px 18px",
+      borderRadius: 10,
+      fontSize: 13,
+      fontWeight: 600,
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 8,
+      transition: "opacity 0.15s"
+    },
+    onMouseOver: e => e.currentTarget.style.opacity = "0.9",
+    onMouseOut: e => e.currentTarget.style.opacity = "1"
+  }, "보고서 작성하기 ", icons.arrow))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#16291e",
+      borderRadius: 18,
+      padding: "26px 24px",
+      color: "#fff",
+      position: "relative",
+      overflow: "hidden"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "absolute",
+      right: -20,
+      bottom: -20,
+      color: "rgba(255,255,255,0.05)"
+    }
+  }, icons.check), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "absolute",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      width: "60%",
+      background: "radial-gradient(ellipse at right, rgba(34,160,107,0.2) 0%, transparent 70%)"
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "relative",
+      zIndex: 1
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      fontWeight: 600,
+      color: "#22a06b",
+      letterSpacing: "0.08em",
+      marginBottom: 10,
+      textTransform: "uppercase"
+    }
+  }, "현장 점검 관리"), /*#__PURE__*/React.createElement("h3", {
+    style: {
+      fontSize: 19,
+      fontWeight: 700,
+      marginBottom: 8,
+      lineHeight: 1.3
+    }
+  }, "현장 점검표"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      color: "#8a8680",
+      marginBottom: 20,
+      lineHeight: 1.6
+    }
+  }, "점검 항목별 합격 여부를 기록하고", /*#__PURE__*/React.createElement("br", null), "완료율을 바로 확인하세요."), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setTab("checklist"),
+    style: {
+      background: "#22a06b",
+      color: "#fff",
+      padding: "10px 18px",
+      borderRadius: 10,
+      fontSize: 13,
+      fontWeight: 600,
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 8,
+      transition: "opacity 0.15s"
+    },
+    onMouseOver: e => e.currentTarget.style.opacity = "0.9",
+    onMouseOut: e => e.currentTarget.style.opacity = "1"
+  }, "점검표 열기 ", icons.arrow)))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#fff8f5",
+      border: "1px solid #fdd5c5",
+      borderRadius: 14,
+      padding: "16px 20px",
+      display: "flex",
+      gap: 12,
+      alignItems: "flex-start"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#e8562a",
+      flexShrink: 0,
+      marginTop: 1
+    }
+  }, icons.alert), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      fontWeight: 600,
+      color: "#c44020",
+      marginBottom: 4
+    }
+  }, "동절기 CO 중독 예방 주의"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: "#a03018",
+      lineHeight: 1.6
+    }
+  }, "주거용 가스보일러의 배기통 끝단 상향 설치(FF방식) 및 CO 경보기 작동 여부를 반드시 확인하시기 바랍니다. (GC208 2.3.1)")))), tab === "assistant" && /*#__PURE__*/React.createElement("div", {
+    className: "fade-in",
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      height: "calc(100vh - 80px)"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontSize: 22,
+      fontWeight: 700,
+      letterSpacing: "-0.02em"
+    }
+  }, "KGS Code 기술 비서"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      color: "#8a8680",
+      marginTop: 3
+    }
+  }, "KGS FU551 · GC208 · GC201 실시간 질의응답")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#fff",
+      borderRadius: 16,
+      border: "1px solid #ebe9e4",
+      flex: 1,
+      display: "flex",
+      flexDirection: "column",
+      overflow: "hidden"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      overflowY: "auto",
+      padding: "20px 20px 12px"
+    }
+  }, chatMsgs.map((m, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      display: "flex",
+      justifyContent: m.role === "user" ? "flex-end" : "flex-start",
+      marginBottom: 12
+    }
+  }, m.role === "assistant" && /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 28,
+      height: 28,
+      borderRadius: 8,
+      background: "#e8562a",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "#fff",
+      flexShrink: 0,
+      marginRight: 10,
+      marginTop: 2
+    }
+  }, icons.shield), /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: "78%",
+      background: m.role === "user" ? "#16291e" : "#f4f2ef",
+      color: m.role === "user" ? "#f0ede8" : "#2a2826",
+      borderRadius: m.role === "user" ? "14px 14px 4px 14px" : "14px 14px 14px 4px",
+      padding: "12px 16px",
+      fontSize: 14,
+      lineHeight: 1.65,
+      whiteSpace: "pre-wrap"
+    }
+  }, m.content))), typing && /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 10,
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 28,
+      height: 28,
+      borderRadius: 8,
+      background: "#e8562a",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "#fff",
+      flexShrink: 0
+    }
+  }, icons.shield), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#f4f2ef",
+      borderRadius: "14px 14px 14px 4px",
+      padding: "14px 18px"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "dot-pulse"
+  }, /*#__PURE__*/React.createElement("span", null), /*#__PURE__*/React.createElement("span", null), /*#__PURE__*/React.createElement("span", null)))), /*#__PURE__*/React.createElement("div", {
+    ref: chatEndRef
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "12px 16px",
+      borderTop: "1px solid #ebe9e4"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      alignItems: "flex-end"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      background: "#f4f2ef",
+      borderRadius: 12,
+      padding: "10px 14px",
+      display: "flex",
+      alignItems: "center"
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "text",
+    value: userInput,
+    onChange: e => setUserInput(e.target.value),
+    onKeyDown: e => e.key === "Enter" && sendMsg(),
+    placeholder: "예: 배관과 전기콘센트 이격거리는?",
+    style: {
+      flex: 1,
+      background: "none",
+      border: "none",
+      fontSize: 14,
+      color: "#1a1918"
+    }
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: sendMsg,
+    disabled: typing,
+    style: {
+      width: 42,
+      height: 42,
+      borderRadius: 11,
+      background: typing ? "#ccc" : "#e8562a",
+      color: "#fff",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      flexShrink: 0,
+      transition: "opacity 0.15s"
+    }
+  }, icons.send)), /*#__PURE__*/React.createElement("div", {
+    className: "chip-scroll",
+    style: {
+      display: "flex",
+      gap: 6,
+      marginTop: 8,
+      flexWrap: "nowrap",
+      overflowX: "auto",
+      paddingBottom: 2
+    }
+  }, [{
+    label: "계량기 설치기준",
+    query: "가스계량기 설치기준을 알려줘 (설치 높이, 이격거리, 환기 기준 포함)"
+  }, {
+    label: "배관 매설 깊이",
+    query: "배관 매설 깊이"
+  }, {
+    label: "정압기 유지 기준",
+    query: "정압기 유지 기준"
+  }, {
+    label: "가정용 가스보일러 설치 기준",
+    query: "가정용 가스보일러 설치 기준"
+  }, {
+    label: "상업용 가스보일러 설치기준",
+    query: "상업용 가스보일러 설치기준"
+  }, {
+    label: "기밀시험 기준",
+    query: "기밀시험 기준"
+  }, {
+    label: "타 지장물과의 이격거리 기준",
+    query: "타 지장물과의 이격거리 기준"
+  }, {
+    label: "가스누설차단기 설치기준",
+    query: "가스누설차단기 설치기준"
+  }, {
+    label: "배관설비 기준",
+    query: "배관설비 기준"
+  }, {
+    label: "검사 기준",
+    query: "검사 기준"
+  }].map(({
+    label,
+    query
+  }) => /*#__PURE__*/React.createElement("button", {
+    key: label,
+    onClick: () => {
+      setUserInput(query);
+    },
+    style: {
+      fontSize: 12,
+      background: "#f0ede8",
+      color: "#6a6864",
+      padding: "5px 10px",
+      borderRadius: 20,
+      border: "1px solid #dedad4",
+      transition: "all 0.15s",
+      flexShrink: 0,
+      whiteSpace: "nowrap"
+    },
+    onMouseOver: e => e.currentTarget.style.background = "#e8e5df",
+    onMouseOut: e => e.currentTarget.style.background = "#f0ede8"
+  }, label)))))), tab === "report" && /*#__PURE__*/React.createElement("div", {
+    className: "fade-in"
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 20
+    }
+  }, /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontSize: 22,
+      fontWeight: 700,
+      letterSpacing: "-0.02em"
+    }
+  }, "AI 보고서 생성기"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      color: "#8a8680",
+      marginTop: 3
+    }
+  }, "업무 내용을 입력하면 플레미가 전문 기술 보고서로 변환해줘요.")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr",
+      gap: 20
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#fff",
+      borderRadius: 16,
+      border: "1px solid #ebe9e4",
+      padding: "24px"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      fontWeight: 600,
+      color: "#4a4845",
+      marginBottom: 16,
+      display: "flex",
+      alignItems: "center",
+      gap: 8
+    }
+  }, icons.file, " ", /*#__PURE__*/React.createElement("span", null, "활동 내용 입력")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 12,
+      fontWeight: 500,
+      color: "#8a8680",
+      display: "block",
+      marginBottom: 6
+    }
+  }, "주요 수행 업무 *"), /*#__PURE__*/React.createElement("textarea", {
+    value: reportInput.activity,
+    onChange: e => setReportInput({
+      ...reportInput,
+      activity: e.target.value
+    }),
+    rows: 5,
+    placeholder: "예: 정압기 분해 점검 참관 및 단지 내 사용자 시설 특별 안전 점검",
+    style: {
+      width: "100%",
+      background: "#f8f7f4",
+      border: "1px solid #e5e3de",
+      borderRadius: 10,
+      padding: "10px 12px",
+      fontSize: 13,
+      color: "#1a1918",
+      lineHeight: 1.6
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 12,
+      fontWeight: 500,
+      color: "#8a8680",
+      display: "block",
+      marginBottom: 6
+    }
+  }, "특이사항 및 결과"), /*#__PURE__*/React.createElement("textarea", {
+    value: reportInput.results,
+    onChange: e => setReportInput({
+      ...reportInput,
+      results: e.target.value
+    }),
+    rows: 3,
+    placeholder: "예: 가스 누출 없음 확인, 노후 밸브 1개소 교체 권고",
+    style: {
+      width: "100%",
+      background: "#f8f7f4",
+      border: "1px solid #e5e3de",
+      borderRadius: 10,
+      padding: "10px 12px",
+      fontSize: 13,
+      color: "#1a1918",
+      lineHeight: 1.6
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 20
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 12,
+      fontWeight: 500,
+      color: "#8a8680",
+      display: "block",
+      marginBottom: 6
+    }
+  }, "작성자"), /*#__PURE__*/React.createElement("input", {
+    type: "text",
+    value: reportInput.manager,
+    onChange: e => setReportInput({
+      ...reportInput,
+      manager: e.target.value
+    }),
+    style: {
+      width: "100%",
+      background: "#f8f7f4",
+      border: "1px solid #e5e3de",
+      borderRadius: 10,
+      padding: "10px 12px",
+      fontSize: 13,
+      color: "#1a1918"
+    }
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: genReport,
+    disabled: genLoading || !reportInput.activity,
+    style: {
+      width: "100%",
+      background: genLoading ? "#ccc" : "#e8562a",
+      color: "#fff",
+      padding: "13px",
+      borderRadius: 11,
+      fontSize: 14,
+      fontWeight: 600,
+      transition: "opacity 0.15s"
+    }
+  }, genLoading ? "보고서 생성 중..." : "전문 보고서로 변환 →")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#fff",
+      borderRadius: 16,
+      border: "1px solid #ebe9e4",
+      padding: "24px",
+      display: "flex",
+      flexDirection: "column"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      fontWeight: 600,
+      color: "#4a4845",
+      display: "flex",
+      alignItems: "center",
+      gap: 8
+    }
+  }, icons.file, " ", /*#__PURE__*/React.createElement("span", null, "생성된 보고서")), report && /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      const b = new Blob([report], {
+        type: "text/plain"
+      });
+      const u = URL.createObjectURL(b);
+      const a = document.createElement("a");
+      a.href = u;
+      a.download = "안전관리보고서.txt";
+      a.click();
+    },
+    style: {
+      fontSize: 12,
+      color: "#e8562a",
+      background: "none",
+      display: "flex",
+      alignItems: "center",
+      gap: 4
+    }
+  }, icons.download, " 저장")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      background: "#f8f7f4",
+      borderRadius: 10,
+      border: "1px dashed #dedad4",
+      padding: "16px",
+      overflowY: "auto",
+      minHeight: 300
+    }
+  }, report ? /*#__PURE__*/React.createElement("pre", {
+    style: {
+      whiteSpace: "pre-wrap",
+      fontFamily: "'Pretendard', sans-serif",
+      fontSize: 13,
+      color: "#2a2826",
+      lineHeight: 1.75
+    }
+  }, report) : /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: "100%",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "#c0bdb8",
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      opacity: 0.4
+    }
+  }, icons.file), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13
+    }
+  }, "업무 내용을 입력하고 버튼을 눌러주세요.")))))), tab === "checklist" && /*#__PURE__*/React.createElement("div", {
+    className: "fade-in"
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 20
+    }
+  }, /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontSize: 22,
+      fontWeight: 700,
+      letterSpacing: "-0.02em"
+    }
+  }, "현장 안전점검표"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      color: "#8a8680",
+      marginTop: 3
+    }
+  }, "KGS FU551 및 GC208 기준 핵심 점검 항목")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#fff",
+      borderRadius: 16,
+      border: "1px solid #ebe9e4",
+      overflow: "hidden",
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "18px 22px",
+      borderBottom: "1px solid #f0ede8",
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      background: "#fafaf8"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13,
+      color: "#22a06b",
+      fontWeight: 600
+    }
+  }, "✓ 합격 ", passCount, "건"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13,
+      color: "#e8562a",
+      fontWeight: 600
+    }
+  }, "✗ 불합격 ", failCount, "건"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13,
+      color: "#8a8680"
+    }
+  }, "미점검 ", checks.length - passCount - failCount, "건")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setDeleteMode(false);
+      setShowAdd(!showAdd);
+    },
+    style: {
+      fontSize: 13,
+      background: showAdd ? "#e8562a" : "#16291e",
+      color: "#fff",
+      padding: "8px 14px",
+      borderRadius: 9,
+      display: "flex",
+      alignItems: "center",
+      gap: 6,
+      fontWeight: 500,
+      transition: "background 0.15s"
+    }
+  }, icons.plus, " 항목 추가"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setShowAdd(false);
+      setDeleteMode(!deleteMode);
+    },
+    style: {
+      fontSize: 13,
+      background: deleteMode ? "#e8562a" : "#fff",
+      color: deleteMode ? "#fff" : "#c44020",
+      padding: "8px 14px",
+      borderRadius: 9,
+      display: "flex",
+      alignItems: "center",
+      gap: 6,
+      fontWeight: 500,
+      border: `1px solid ${deleteMode ? "#e8562a" : "#fdd5c5"}`,
+      transition: "all 0.15s"
+    }
+  }, icons.trash, " ", deleteMode ? "삭제 완료" : "항목 삭제"))), showAdd && /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "16px 22px",
+      borderBottom: "1px solid #f0ede8",
+      background: "#fff9f7",
+      display: "flex",
+      gap: 10,
+      flexWrap: "wrap",
+      alignItems: "flex-end"
+    }
+  }, [{
+    placeholder: "구분 (예: 배관)",
+    field: "category",
+    width: 130
+  }, {
+    placeholder: "점검 항목",
+    field: "task",
+    width: 260
+  }, {
+    placeholder: "KGS 코드",
+    field: "kgs",
+    width: 130
+  }].map(({
+    placeholder,
+    field,
+    width
+  }) => /*#__PURE__*/React.createElement("input", {
+    key: field,
+    type: "text",
+    placeholder: placeholder,
+    value: newTask[field],
+    onChange: e => setNewTask({
+      ...newTask,
+      [field]: e.target.value
+    }),
+    style: {
+      width,
+      background: "#fff",
+      border: "1px solid #e5e3de",
+      borderRadius: 8,
+      padding: "8px 11px",
+      fontSize: 13,
+      color: "#1a1918"
+    }
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: addTask,
+    style: {
+      background: "#e8562a",
+      color: "#fff",
+      padding: "9px 16px",
+      borderRadius: 9,
+      fontSize: 13,
+      fontWeight: 600
+    }
+  }, "추가")), (() => {
+    const categories = [...new Set(checks.map(c => c.category))];
+    return categories.map(cat => {
+      const items = checks.filter(c => c.category === cat);
+      const isOpen = expandedCategories.includes(cat);
+      const catPass = items.filter(i => i.status === "pass").length;
+      const catFail = items.filter(i => i.status === "fail").length;
+      const allDone = catPass + catFail === items.length;
+      const toggleCat = () => setExpandedCategories(prev => prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]);
+      return /*#__PURE__*/React.createElement("div", {
+        key: cat,
+        style: {
+          borderBottom: "1px solid #f0ede8"
+        }
+      }, /*#__PURE__*/React.createElement("button", {
+        onClick: toggleCat,
+        style: {
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          padding: "14px 20px",
+          background: isOpen ? "#fff8f5" : "#fafaf8",
+          border: "none",
+          cursor: "pointer",
+          gap: 12,
+          transition: "background 0.15s"
+        }
+      }, /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: 13,
+          transition: "transform 0.2s",
+          display: "inline-block",
+          transform: isOpen ? "rotate(90deg)" : "rotate(0deg)",
+          color: "#8a8680"
+        }
+      }, /*#__PURE__*/React.createElement("svg", {
+        width: "14",
+        height: "14",
+        viewBox: "0 0 24 24",
+        fill: "none",
+        stroke: "currentColor",
+        strokeWidth: "2.5",
+        strokeLinecap: "round",
+        strokeLinejoin: "round"
+      }, /*#__PURE__*/React.createElement("polyline", {
+        points: "9 18 15 12 9 6"
+      }))), /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: 13,
+          fontWeight: 700,
+          color: isOpen ? "#c44020" : "#4a4845",
+          background: isOpen ? "#fff3f0" : "#f0ede8",
+          padding: "4px 10px",
+          borderRadius: 6
+        }
+      }, cat), /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: 12,
+          color: "#8a8680"
+        }
+      }, items.length, "개 항목"), /*#__PURE__*/React.createElement("span", {
+        style: {
+          marginLeft: "auto",
+          display: "flex",
+          gap: 6,
+          alignItems: "center"
+        }
+      }, catPass > 0 && /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: 11,
+          fontWeight: 600,
+          color: "#22a06b",
+          background: "#edfaf4",
+          padding: "2px 8px",
+          borderRadius: 10
+        }
+      }, "✓ ", catPass), catFail > 0 && /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: 11,
+          fontWeight: 600,
+          color: "#e8562a",
+          background: "#fff0ee",
+          padding: "2px 8px",
+          borderRadius: 10
+        }
+      }, "✗ ", catFail), allDone && /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: 11,
+          color: "#22a06b"
+        }
+      }, "완료"))), isOpen && /*#__PURE__*/React.createElement("table", {
+        style: {
+          width: "100%",
+          borderCollapse: "collapse"
+        }
+      }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
+        style: {
+          background: "#fffdf9"
+        }
+      }, ["점검 항목", "결과", "기술기준", ...(deleteMode ? ["삭제"] : [])].map(h => /*#__PURE__*/React.createElement("th", {
+        key: h,
+        style: {
+          padding: "9px 20px 9px",
+          fontSize: 11,
+          fontWeight: 500,
+          color: "#a0ada8",
+          textAlign: "left",
+          borderBottom: "1px solid #f4f2ef"
+        }
+      }, h)))), /*#__PURE__*/React.createElement("tbody", null, items.map(item => /*#__PURE__*/React.createElement("tr", {
+        key: item.id,
+        style: {
+          borderBottom: "1px solid #f7f5f2",
+          background: deleteMode ? "#fffaf9" : "#fff"
+        }
+      }, /*#__PURE__*/React.createElement("td", {
+        style: {
+          padding: "13px 20px",
+          fontSize: 14,
+          color: "#2a2826",
+          fontWeight: 500
+        }
+      }, /*#__PURE__*/React.createElement("span", {
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: 8
+        }
+      }, /*#__PURE__*/React.createElement("span", {
+        style: {
+          width: 4,
+          height: 4,
+          borderRadius: "50%",
+          background: "#e8562a",
+          flexShrink: 0,
+          display: "inline-block"
+        }
+      }), item.task)), /*#__PURE__*/React.createElement("td", {
+        style: {
+          padding: "13px 20px",
+          textAlign: "left"
+        }
+      }, /*#__PURE__*/React.createElement("button", {
+        className: "check-btn",
+        onClick: () => !deleteMode && cycleCheck(item.id),
+        style: {
+          background: item.status === "pass" ? "#edfaf4" : item.status === "fail" ? "#fff0ee" : "#f4f2ef",
+          color: item.status === "pass" ? "#22a06b" : item.status === "fail" ? "#e8562a" : "#b0ada8",
+          border: `1.5px solid ${item.status === "pass" ? "#c0ecd8" : item.status === "fail" ? "#fdd5c5" : "#e5e3de"}`,
+          opacity: deleteMode ? 0.4 : 1,
+          cursor: deleteMode ? "default" : "pointer"
+        }
+      }, item.status === "pass" ? icons.ok : item.status === "fail" ? icons.fail : /*#__PURE__*/React.createElement("svg", {
+        width: "14",
+        height: "14",
+        viewBox: "0 0 24 24",
+        fill: "none",
+        stroke: "currentColor",
+        strokeWidth: "2"
+      }, /*#__PURE__*/React.createElement("circle", {
+        cx: "12",
+        cy: "12",
+        r: "9"
+      })))), /*#__PURE__*/React.createElement("td", {
+        style: {
+          padding: "13px 20px",
+          fontSize: 12,
+          color: "#b0ada8",
+          fontStyle: "italic"
+        }
+      }, "KGS ", item.kgs), deleteMode && /*#__PURE__*/React.createElement("td", {
+        style: {
+          padding: "13px 20px"
+        }
+      }, /*#__PURE__*/React.createElement("button", {
+        onClick: () => deleteItem(item.id),
+        style: {
+          width: 30,
+          height: 30,
+          borderRadius: 7,
+          background: "#fff0ee",
+          color: "#e8562a",
+          border: "1px solid #fdd5c5",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          transition: "all 0.15s"
+        },
+        onMouseOver: e => {
+          e.currentTarget.style.background = "#e8562a";
+          e.currentTarget.style.color = "#fff";
+        },
+        onMouseOut: e => {
+          e.currentTarget.style.background = "#fff0ee";
+          e.currentTarget.style.color = "#e8562a";
+        }
+      }, icons.trash)))))));
+    });
+  })(), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "16px 22px",
+      display: "flex",
+      justifyContent: "flex-end"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    style: {
+      background: "#16291e",
+      color: "#fff",
+      padding: "12px 28px",
+      borderRadius: 11,
+      fontSize: 14,
+      fontWeight: 600,
+      transition: "opacity 0.15s"
+    },
+    onMouseOver: e => e.currentTarget.style.opacity = "0.85",
+    onMouseOut: e => e.currentTarget.style.opacity = "1"
+  }, "점검 완료 및 저장"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#fff8f5",
+      border: "1px solid #fdd5c5",
+      borderRadius: 14,
+      padding: "16px 20px",
+      display: "flex",
+      gap: 12,
+      alignItems: "flex-start"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#e8562a",
+      flexShrink: 0,
+      marginTop: 1
+    }
+  }, icons.alert), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      fontWeight: 600,
+      color: "#c44020",
+      marginBottom: 4
+    }
+  }, "중요 안전 알림"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: "#a03018",
+      lineHeight: 1.6
+    }
+  }, "동절기 일산화탄소 중독 사고 예방을 위해 주거용 가스보일러의 배기통 끝단 상향 설치(FF방식) 여부를 반드시 확인하시기 바랍니다. (GC208 2.3.1)")))))));
 }
-
-// ── 보고서 ──
-function genReport(){
-  var act=document.getElementById('rep-activity').value.trim();
-  if(!act)return;
-  var btn=document.getElementById('rep-btn');
-  btn.disabled=true;btn.textContent='보고서 생성 중...';
-  var out=document.getElementById('rep-out');
-  out.style.alignItems='center';out.style.justifyContent='center';
-  out.innerHTML='<div class="dot-pulse"><span></span><span></span><span></span></div>';
-
-  setTimeout(function(){
-    repText=sampleReport.replace('정압기 분해 점검 참관 및 단지 내 사용자 시설에 대한 특별 안전점검',act);
-    out.style.alignItems='';out.style.justifyContent='';
-    out.innerHTML='<pre style="white-space:pre-wrap;font-family:inherit;font-size:13px;color:#2a2826;line-height:1.75">'+repText+'</pre>';
-    document.getElementById('dl-btn').style.display='inline-flex';
-    btn.disabled=false;btn.textContent='전문 보고서로 변환 →';
-  },1500);
-}
-
-function dlReport(){
-  if(!repText)return;
-  var b=new Blob([repText],{type:'text/plain'});
-  var u=URL.createObjectURL(b);
-  var a=document.createElement('a');a.href=u;a.download='안전관리보고서.txt';a.click();
-}
-
-// ── 점검표 ──
-function updateDash(){
-  var pass=checks.filter(function(c){return c.status==='pass';}).length;
-  var fail=checks.filter(function(c){return c.status==='fail';}).length;
-  var total=checks.length;
-  var rate=total?Math.round(((pass+fail)/total)*100):0;
-  document.getElementById('dash-rate').textContent=rate+'%';
-  document.getElementById('dash-rate-sub').textContent=(pass+fail)+' / '+total+' 항목';
-  document.getElementById('dash-fail').textContent=fail+'건';
-}
-
-function renderCk(){
-  var pass=checks.filter(function(c){return c.status==='pass';}).length;
-  var fail=checks.filter(function(c){return c.status==='fail';}).length;
-  document.getElementById('ck-pass').textContent='✓ 합격 '+pass+'건';
-  document.getElementById('ck-fail').textContent='✗ 불합격 '+fail+'건';
-  document.getElementById('ck-none').textContent='미점검 '+(checks.length-pass-fail)+'건';
-
-  var cats=[...new Set(checks.map(function(c){return c.category;}))];
-  document.getElementById('ck-body').innerHTML=cats.map(function(cat){
-    var items=checks.filter(function(c){return c.category===cat;});
-    var cp=items.filter(function(i){return i.status==='pass';}).length;
-    var cf=items.filter(function(i){return i.status==='fail';}).length;
-    var isOpen=expanded.indexOf(cat)>-1;
-    var badges=(cp>0?'<span style="font-size:11px;font-weight:600;color:#22a06b;background:#edfaf4;padding:2px 8px;border-radius:10px">✓ '+cp+'</span>':'')
-              +(cf>0?'<span style="font-size:11px;font-weight:600;color:#e8562a;background:#fff0ee;padding:2px 8px;border-radius:10px">✗ '+cf+'</span>':'');
-    var rows=isOpen?'<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#fffdf9">'
-      +'<th style="padding:9px 20px;font-size:11px;font-weight:500;color:#a0ada8;text-align:left;border-bottom:1px solid #f4f2ef">점검 항목</th>'
-      +'<th style="padding:9px 20px;font-size:11px;font-weight:500;color:#a0ada8;text-align:left;border-bottom:1px solid #f4f2ef">결과</th>'
-      +'<th style="padding:9px 20px;font-size:11px;font-weight:500;color:#a0ada8;text-align:left;border-bottom:1px solid #f4f2ef">기술기준</th>'
-      +(delMode?'<th style="padding:9px 20px;font-size:11px;font-weight:500;color:#a0ada8;text-align:left;border-bottom:1px solid #f4f2ef">삭제</th>':'')
-      +'</tr></thead><tbody>'
-      +items.map(function(item){
-        var icon=item.status==='pass'?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>'
-          :item.status==='fail'?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
-          :'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>';
-        var bg=item.status==='pass'?'#edfaf4':item.status==='fail'?'#fff0ee':'#f4f2ef';
-        var col=item.status==='pass'?'#22a06b':item.status==='fail'?'#e8562a':'#b0ada8';
-        var bdr=item.status==='pass'?'#c0ecd8':item.status==='fail'?'#fdd5c5':'#e5e3de';
-        return '<tr style="border-bottom:1px solid #f7f5f2">'
-          +'<td style="padding:13px 20px;font-size:14px;color:#2a2826;font-weight:500"><span style="display:flex;align-items:center;gap:8px"><span style="width:4px;height:4px;border-radius:50%;background:#e8562a;flex-shrink:0;display:inline-block"></span>'+item.task+'</span></td>'
-          +'<td style="padding:13px 20px"><button class="check-btn" onclick="cycleCheck('+item.id+')" style="background:'+bg+';color:'+col+';border:1.5px solid '+bdr+'">'+icon+'</button></td>'
-          +'<td style="padding:13px 20px;font-size:12px;color:#b0ada8;font-style:italic">KGS '+item.kgs+'</td>'
-          +(delMode?'<td style="padding:13px 20px"><button onclick="delItem('+item.id+')" style="width:30px;height:30px;border-radius:7px;background:#fff0ee;color:#e8562a;border:1px solid #fdd5c5;display:flex;align-items:center;justify-content:center;cursor:pointer">🗑</button></td>':'')
-          +'</tr>';
-      }).join('')+'</tbody></table>':'';
-
-    return '<div style="border-bottom:1px solid #f0ede8">'
-      +'<button onclick="toggleCat(\''+cat+'\')" style="width:100%;display:flex;align-items:center;padding:14px 20px;border:none;cursor:pointer;gap:12px;background:'+(isOpen?'#fff8f5':'#fafaf8')+';transition:background .15s">'
-      +'<span style="display:inline-block;transform:'+(isOpen?'rotate(90deg)':'rotate(0)')+';transition:transform .2s;color:#8a8680;font-size:12px">▶</span>'
-      +'<span style="font-size:13px;font-weight:700;color:'+(isOpen?'#c44020':'#4a4845')+';background:'+(isOpen?'#fff3f0':'#f0ede8')+';padding:4px 10px;border-radius:6px">'+cat+'</span>'
-      +'<span style="font-size:12px;color:#8a8680">'+items.length+'개 항목</span>'
-      +'<span style="margin-left:auto;display:flex;gap:6px">'+badges+'</span>'
-      +'</button>'+rows+'</div>';
-  }).join('');
-}
-
-function cycleCheck(id){
-  var c=checks.find(function(c){return c.id===id;});
-  if(!c)return;
-  c.status=c.status==='none'?'pass':c.status==='pass'?'fail':'none';
-  renderCk();updateDash();
-}
-function delItem(id){checks=checks.filter(function(c){return c.id!==id;});renderCk();}
-function toggleCat(cat){
-  var i=expanded.indexOf(cat);
-  if(i>-1)expanded.splice(i,1);else expanded.push(cat);
-  renderCk();
-}
-function toggleAdd(){
-  var f=document.getElementById('add-form');
-  var show=f.style.display==='none'||f.style.display==='';
-  f.style.display=show?'flex':'none';
-  document.getElementById('add-btn').style.background=show?'#e8562a':'#1c1b18';
-  delMode=false;
-  document.getElementById('del-btn').style.background='#fff';
-  document.getElementById('del-btn').style.color='#c44020';
-  renderCk();
-}
-function toggleDel(){
-  delMode=!delMode;
-  document.getElementById('del-btn').style.background=delMode?'#e8562a':'#fff';
-  document.getElementById('del-btn').style.color=delMode?'#fff':'#c44020';
-  document.getElementById('add-form').style.display='none';
-  document.getElementById('add-btn').style.background='#1c1b18';
-  renderCk();
-}
-function addTask(){
-  var cat=document.getElementById('new-cat').value.trim();
-  var task=document.getElementById('new-task').value.trim();
-  var kgs=document.getElementById('new-kgs').value.trim();
-  if(!task)return;
-  checks.push({id:Date.now(),category:cat||'기타',task:task,status:'none',kgs:kgs});
-  document.getElementById('new-cat').value='';
-  document.getElementById('new-task').value='';
-  document.getElementById('new-kgs').value='';
-  toggleAdd();
-  renderCk();
-}
-
-// ── 초기화 ──
-buildNav(document.getElementById('nav-desk'),false);
-buildNav(document.getElementById('nav-mob'),true);
-renderChat();
-updateDash();
-</script>
+ReactDOM.createRoot(document.getElementById("root")).render(/*#__PURE__*/React.createElement(App, null));</script>
 </body>
 </html>
