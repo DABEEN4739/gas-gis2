@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>공급전 안전점검 신청서 검토 도구</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <h1>공급전 안전점검 신청서 검토 도구</h1>
+      <p class="app-sub">가스시설 완공확인 신청서·공급전 안전점검 신청서·자체점검표·성적서 등을 업로드하면 KGS FU551 기준으로 서류 간 정합성을 대조해 검토 리포트를 생성합니다.</p>
+    </header>
+
+    <section class="panel setup-panel">
+      <div class="setup-row">
+        <label for="apiKey">Anthropic API 키</label>
+        <input type="password" id="apiKey" placeholder="sk-ant-..." autocomplete="off">
+        <label class="checkbox-label">
+          <input type="checkbox" id="rememberKey"> 이 브라우저에 저장
+        </label>
+      </div>
+      <p class="hint">
+        ⚠️ 이 도구는 브라우저에서 Anthropic API로 직접 요청합니다. API 키는 사용자의 브라우저(localStorage)에만 저장되며 어디에도 전송되지 않지만,
+        공용 컴퓨터나 공개 배포 환경에서는 키가 노출될 수 있으니 개인/사내 용도로만 사용하세요.
+      </p>
+    </section>
+
+    <section class="panel upload-panel">
+      <div id="dropzone" class="dropzone">
+        <p><strong>PDF 또는 이미지 파일을 끌어다 놓거나 클릭해서 선택하세요</strong></p>
+        <p class="muted">여러 건의 서류를 한 번에 올려도 됩니다 (신청서, 자체점검표, 성적서, 사진대지 등)</p>
+        <input type="file" id="fileInput" multiple accept="application/pdf,image/*">
+      </div>
+      <ul id="fileList" class="file-list"></ul>
+      <div class="actions">
+        <button id="generateBtn" class="btn-primary" disabled>검토 리포트 생성</button>
+        <button id="clearBtn" class="btn-secondary">초기화</button>
+      </div>
+      <div id="statusBox" class="status-box" hidden></div>
+    </section>
+
+    <section id="resultSection" class="panel result-panel" hidden>
+      <div class="result-toolbar">
+        <button id="downloadBtn" class="btn-secondary">리포트 HTML로 다운로드</button>
+      </div>
+      <div id="reportRoot"></div>
+    </section>
+  </div>
+
+  <script src="prompt.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
